@@ -18,7 +18,7 @@ import type {
   Milestone,
   Mode,
   Quest,
-  Rank,
+  RankInfo,
   StatKey,
   StatXp,
   TimeOfDay,
@@ -29,7 +29,7 @@ import {
   consistencyMultiplier,
   levelFromXp,
   questXp,
-  rankFromXp,
+  rankInfo,
   statLevel,
   topStat,
   xpForStatLevel,
@@ -103,8 +103,11 @@ export interface CompleteResult {
   balancedDay: boolean;
   leveledUp: boolean;
   newLevel: number;
+  /** True on any promotion, including a division. */
   rankedUp: boolean;
-  newRank: Rank;
+  /** True when the promotion enters a new tier. */
+  tierUp: boolean;
+  newRank: RankInfo;
   newMilestones: Milestone[];
 }
 
@@ -120,7 +123,8 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     leveledUp: false,
     newLevel: levelFromXp(p.totalXp),
     rankedUp: false,
-    newRank: rankFromXp(p.totalXp),
+    tierUp: false,
+    newRank: rankInfo(p.totalXp),
     newMilestones: [],
   });
 
@@ -160,8 +164,8 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
   const { state: finalState, unlocked } = checkMilestones(next);
   const oldLevel = levelFromXp(p.totalXp);
   const newLevel = levelFromXp(finalState.profile.totalXp);
-  const oldRank = rankFromXp(p.totalXp);
-  const newRank = rankFromXp(finalState.profile.totalXp);
+  const oldRank = rankInfo(p.totalXp);
+  const newRank = rankInfo(finalState.profile.totalXp);
   return {
     state: finalState,
     ok: true,
@@ -170,7 +174,8 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     balancedDay: balanced,
     leveledUp: newLevel > oldLevel,
     newLevel,
-    rankedUp: newRank !== oldRank,
+    rankedUp: newRank.step > oldRank.step,
+    tierUp: newRank.tierIndex > oldRank.tierIndex,
     newRank,
     newMilestones: unlocked,
   };

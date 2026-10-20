@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import type { Habit } from '@la66/core';
 import { STAT_META } from '../lib/theme';
+import { StatEmblem } from './StatEmblem';
 
 export interface Origin {
   x: number;
@@ -32,7 +33,7 @@ export function QuestRow({ habit, done, xp, onComplete }: Props) {
       whileTap={done ? undefined : { scale: 0.97 }}
       onClick={click}
       className={`glass flex w-full items-center gap-3 p-3 text-left transition-colors ${
-        done ? 'border-arc-emerald/50 bg-arc-emerald/10' : 'active:border-arc-violet/70'
+        done ? 'border-arc-emerald/60 bg-arc-emerald/10' : 'active:border-arc-violet/80'
       }`}
     >
       <span
@@ -43,13 +44,14 @@ export function QuestRow({ habit, done, xp, onComplete }: Props) {
       >
         {done && (
           <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 18 }}>
-            <Check size={20} strokeWidth={3} color="#0B0F19" />
+            <Check size={20} strokeWidth={3} color="#141B3A" />
           </motion.span>
         )}
       </span>
       <span className="min-w-0 flex-1">
         <span className={`block truncate font-medium ${done ? 'text-slate-400 line-through' : ''}`}>{habit.name}</span>
-        <span className="text-xs" style={{ color: meta.color }}>
+        <span className="mt-0.5 flex items-center gap-1 text-xs" style={{ color: meta.color }}>
+          <StatEmblem stat={habit.stat} size={18} />
           {meta.label}
         </span>
       </span>

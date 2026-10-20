@@ -6,7 +6,6 @@ import {
   completedToday,
   groupByTimeOfDay,
   penaltyAtRisk,
-  rankProgress,
   statSummary,
   todayProgress,
 } from './selectors';
@@ -42,10 +41,6 @@ describe('selectors', () => {
     expect(str.level).toBe(1);
     expect(Math.round(str.ratio * 1000)).toBe(517);
     expect(statSummary(s)).toHaveLength(5);
-  });
-  it('reports rank progress', () => {
-    expect(rankProgress(250)).toEqual({ rank: 'E', next: 'D', ratio: 0.5, xpToNext: 250 });
-    expect(rankProgress(12000)).toEqual({ rank: 'S', next: null, ratio: 1, xpToNext: 0 });
   });
   it('previews the Hard Mode penalty and matches endDay', () => {
     expect(penaltyAtRisk(completeQuest(game(), 'h1').state)).toBe(0); // standard mode

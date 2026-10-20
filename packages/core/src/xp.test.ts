@@ -4,9 +4,9 @@ import {
   consistencyMultiplier,
   levelFromXp,
   levelProgress,
-  nextRank,
   questXp,
-  rankFromXp,
+  rankInfo,
+  stepThreshold,
   statLevel,
 } from './xp';
 
@@ -45,12 +45,30 @@ describe('levels and ranks', () => {
     expect(lp.xpForNext).toBe(250);
     expect(lp.ratio).toBe(0);
   });
-  it('promotes ranks at thresholds', () => {
-    expect(rankFromXp(499)).toBe('E');
-    expect(rankFromXp(500)).toBe('D');
-    expect(rankFromXp(12000)).toBe('S');
-    expect(nextRank(0)?.rank).toBe('D');
-    expect(nextRank(12000)).toBeNull();
+  it('walks the 34-step ladder', () => {
+    expect(rankInfo(0).label).toBe('Iron IV');
+    expect(rankInfo(stepThreshold(4) - 1).label).toBe('Iron I');
+    expect(rankInfo(stepThreshold(4)).label).toBe('Bronze IV');
+    expect(rankInfo(26954).label).toBe('Gold II');
+    expect(rankInfo(stepThreshold(28)).label).toBe('Master');
+    expect(rankInfo(stepThreshold(29)).label).toBe('Grandmaster');
+    expect(rankInfo(stepThreshold(30)).label).toBe('Challenger IV');
+  });
+  it('has strictly increasing thresholds', () => {
+    for (let i = 1; i <= 33; i++) expect(stepThreshold(i) > stepThreshold(i - 1)).toBe(true);
+  });
+  it('switches to points at Challenger I', () => {
+    const t = stepThreshold(33);
+    expect(rankInfo(t - 1).points).toBeNull();
+    expect(rankInfo(t).label).toBe('Challenger I · 0 pts');
+    expect(rankInfo(t + 255).points).toBe(25);
+    expect(rankInfo(t + 255).nextLabel).toBeNull();
+    expect(rankInfo(10_000_000).step).toBe(33);
+  });
+  it('reports progress to the next step', () => {
+    const mid = (stepThreshold(5) + stepThreshold(6)) / 2;
+    expect(Math.round(rankInfo(mid).ratio * 100)).toBe(50);
+    expect(rankInfo(mid).nextLabel).toBe('Bronze II');
   });
   it('computes stat levels', () => {
     expect(statLevel(0)).toBe(0);

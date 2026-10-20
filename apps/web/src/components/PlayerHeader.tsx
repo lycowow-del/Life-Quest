@@ -7,10 +7,10 @@ import {
   CYCLE_LENGTH,
   cycleDay,
   levelProgress,
-  rankProgress,
+  rankInfo,
   type GameState,
 } from '@la66/core';
-import { RANK_COLOR } from '../lib/theme';
+import { TIER_COLOR } from '../lib/theme';
 import { RankCrest } from './RankCrest';
 
 function Chip({ icon, value, label, color }: { icon: ReactNode; value: string; label: string; color: string }) {
@@ -28,21 +28,24 @@ function Chip({ icon, value, label, color }: { icon: ReactNode; value: string; l
 export function PlayerHeader({ state }: { state: GameState }) {
   const p = state.profile;
   const lp = levelProgress(p.totalXp);
-  const rp = rankProgress(p.totalXp);
+  const rk = rankInfo(p.totalXp);
   const day = Math.min(cycleDay(p), CYCLE_LENGTH);
-  const color = RANK_COLOR[rp.rank];
+  const color = TIER_COLOR[rk.tier];
 
   return (
-    <header className="glass relative overflow-hidden p-4" style={{ boxShadow: `0 0 28px ${color}40` }}>
+    <header className="glass relative overflow-hidden p-4" style={{ boxShadow: `0 0 28px ${color}55` }}>
       <div
         className="pointer-events-none absolute -left-12 -top-16 h-52 w-52 rounded-full blur-3xl"
         style={{ background: `${color}33` }}
         aria-hidden
       />
       <div className="relative flex items-center gap-4">
-        <RankCrest rank={rp.rank} />
+        <RankCrest rank={rk} size={104} />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 truncate text-xs text-slate-400">
+          <p className="font-pixel text-[10px] leading-4" style={{ color }}>
+            {rk.label}
+          </p>
+          <p className="mt-1 flex items-center gap-2 truncate text-xs text-slate-300">
             <span className="truncate">
               {p.name} · {archetype(p.statXp)}
             </span>
@@ -52,32 +55,51 @@ export function PlayerHeader({ state }: { state: GameState }) {
               </span>
             )}
           </p>
-          <p className="text-4xl font-bold leading-none tabular-nums">
+          <p className="mt-1 text-4xl font-bold leading-none tabular-nums">
             <span className="mr-1 text-base font-medium text-slate-400">LV</span>
             {lp.level}
           </p>
-          <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800" role="progressbar" aria-label="XP to next level" aria-valuenow={Math.round(lp.ratio * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div
+            className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800"
+            role="progressbar"
+            aria-label="XP to next level"
+            aria-valuenow={Math.round(lp.ratio * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
             <motion.div
               className="h-full rounded-full bg-gradient-to-r from-arc-violet to-arc-cyan"
-              style={{ boxShadow: '0 0 10px #8B5CF6' }}
               initial={false}
               animate={{ width: `${lp.ratio * 100}%` }}
               transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             />
           </div>
           <p className="mt-1 text-xs tabular-nums text-slate-400">
-            {lp.xpIntoLevel}/{lp.xpForNext} XP · {rp.next ? `${rp.xpToNext} to rank ${rp.next}` : 'max rank'}
+            {lp.xpIntoLevel}/{lp.xpForNext} XP to level {lp.level + 1}
           </p>
         </div>
       </div>
 
-      <div className="relative mt-4 grid grid-cols-3 gap-2">
-        <Chip icon={<Flame size={18} />} value={String(p.streak)} label="day streak" color="#F97316" />
-        <Chip icon={<CalendarDays size={18} />} value={`${day}/${CYCLE_LENGTH}`} label="cycle" color="#06B6D4" />
-        <Chip icon={<Zap size={18} />} value={`${consistencyMultiplier(p.streak).toFixed(2)}x`} label="multiplier" color="#8B5CF6" />
+      <div className="relative mt-3">
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-slate-800"
+          role="progressbar"
+          aria-label={rk.nextLabel ? `Progress to ${rk.nextLabel}` : 'Progress to next point'}
+          aria-valuenow={Math.round(rk.ratio * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="h-full rounded-full" style={{ width: `${rk.ratio * 100}%`, background: color }} />
+        </div>
+        <p className="mt-1 text-[11px] tabular-nums text-slate-400">
+          {rk.nextLabel ? `${rk.xpToNext.toLocaleString()} XP to ${rk.nextLabel}` : `${rk.xpToNext} XP to your next point`}
+        </p>
       </div>
-      <div className="relative mt-3 h-1 overflow-hidden rounded-full bg-slate-800" aria-hidden>
-        <div className="h-full rounded-full bg-arc-cyan/70" style={{ width: `${(day / CYCLE_LENGTH) * 100}%` }} />
+
+      <div className="relative mt-3 grid grid-cols-3 gap-2">
+        <Chip icon={<Flame size={18} />} value={String(p.streak)} label="day streak" color="#FFB38A" />
+        <Chip icon={<CalendarDays size={18} />} value={`${day}/${CYCLE_LENGTH}`} label="cycle" color="#A8E6FF" />
+        <Chip icon={<Zap size={18} />} value={`${consistencyMultiplier(p.streak).toFixed(2)}x`} label="multiplier" color="#FFB3E6" />
       </div>
     </header>
   );

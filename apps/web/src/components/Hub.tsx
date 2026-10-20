@@ -2,7 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Plus, Settings } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { STARTER_HABITS, activeHabits, type GameState, type Habit } from '@la66/core';
-import { RANK_COLOR, STAT_META } from '../lib/theme';
+import { STAT_META, TIER_COLOR } from '../lib/theme';
 import { useGame } from '../store/gameStore';
 import { AddQuestSheet } from './AddQuestSheet';
 import { Burst } from './Burst';
@@ -43,17 +43,26 @@ export function Hub({ state }: { state: GameState }) {
     navigator.vibrate?.(15);
 
     const card = r.newMilestones[0];
-    if (card) setToast({ id, title: 'Skill card unlocked', sub: `Day ${card.day} · ${card.rarity}`, color: '#06B6D4' });
-    else if (r.rankedUp) setToast({ id, title: `Rank ${r.newRank}`, sub: 'You ascended a rank', color: RANK_COLOR[r.newRank] });
-    else if (r.leveledUp) setToast({ id, title: `Level ${r.newLevel}`, sub: 'Level up', color: '#8B5CF6' });
+    if (card) setToast({ id, title: 'Skill card unlocked', sub: `Day ${card.day} · ${card.rarity}`, color: '#A8E6FF' });
+    else if (r.rankedUp)
+      setToast({
+        id,
+        title: r.tierUp ? `Promoted to ${r.newRank.tier}` : `Promoted to ${r.newRank.shortLabel}`,
+        sub: r.tierUp ? r.newRank.shortLabel : 'Division up',
+        color: TIER_COLOR[r.newRank.tier],
+      });
+    else if (r.leveledUp) setToast({ id, title: `Level ${r.newLevel}`, sub: 'Level up', color: '#FFB3E6' });
   };
 
   const empty = activeHabits(state).length === 0;
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-obsidian px-4 font-display" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
+    <div
+      className="mx-auto min-h-screen max-w-md bg-obsidian px-4 font-display"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}
+    >
       <div className="mb-3 flex items-center justify-between px-1">
-        <h1 className="text-sm font-medium tracking-wide text-slate-400">Life Arc 66</h1>
+        <h1 className="font-pixel text-[11px] text-arc-violet">Life Quest</h1>
         <div className="flex gap-1">
           <button type="button" aria-label="Add quest" onClick={() => setSheet('add')} className="rounded-xl p-2 text-slate-300 active:bg-slate-800">
             <Plus size={22} />
@@ -71,7 +80,7 @@ export function Hub({ state }: { state: GameState }) {
           <section className="glass space-y-3 p-6 text-center">
             <p className="text-lg font-bold">No quests yet</p>
             <p className="text-sm text-slate-400">Load a starter pack or write your own.</p>
-            <button type="button" onClick={() => addHabits(STARTER_HABITS)} className="w-full rounded-xl bg-arc-violet py-3 font-bold text-white shadow-glow-violet">
+            <button type="button" onClick={() => addHabits(STARTER_HABITS)} className="w-full rounded-xl bg-arc-violet py-3 font-bold text-obsidian shadow-glow-violet">
               Add starter quests
             </button>
           </section>

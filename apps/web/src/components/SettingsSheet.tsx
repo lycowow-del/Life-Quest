@@ -5,7 +5,7 @@ import { downloadText } from '../store/saveFile';
 import { ImportButton } from './ImportButton';
 import { Sheet } from './Sheet';
 
-const ghost = 'rounded-xl border border-purple-500/30 bg-slate-800 px-4 py-3 text-sm';
+const ghost = 'rounded-xl border border-arc-cyan/40 bg-slate-800 px-4 py-3 text-sm';
 
 export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose: () => void; state: GameState }) {
   const g = useGame();
@@ -39,7 +39,7 @@ export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose
             className={ghost}
             onClick={() => {
               const j = g.exportJson();
-              if (j) downloadText('life-arc-66-save.json', j);
+              if (j) downloadText('life-quest-save.json', j);
             }}
           >
             Export save

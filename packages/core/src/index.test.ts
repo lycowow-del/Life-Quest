@@ -11,7 +11,7 @@ describe('public API', () => {
       'advanceDays',
       'consistencyMultiplier',
       'levelFromXp',
-      'rankFromXp',
+      'rankInfo',
       'archetype',
     ]) {
       expect(typeof (core as Record<string, unknown>)[name]).toBe('function');

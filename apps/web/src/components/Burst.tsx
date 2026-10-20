@@ -29,7 +29,7 @@ export function Burst({ x, y, color, label, onDone }: Props) {
           dy: Math.sin(a) * d,
           size: 4 + Math.random() * 5,
           rot: Math.random() * 360,
-          color: i % 3 === 0 ? '#06B6D4' : i % 3 === 1 ? '#8B5CF6' : color,
+          color: i % 3 === 0 ? '#A8E6FF' : i % 3 === 1 ? '#FFB3E6' : color,
         };
       }),
     [color],
@@ -50,7 +50,7 @@ export function Burst({ x, y, color, label, onDone }: Props) {
         ))}
       <motion.div
         className="absolute -translate-x-1/2 text-xl font-bold tabular-nums text-arc-emerald"
-        style={{ left: x, top: y - 28, textShadow: '0 0 10px #10B981' }}
+        style={{ left: x, top: y - 28, textShadow: '0 0 10px #B8F5C8' }}
         initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 0, y: reduce ? 0 : -52 }}
         transition={{ duration: 0.95 }}

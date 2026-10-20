@@ -1,5 +1,6 @@
 import { statSummary, type GameState } from '@la66/core';
 import { STAT_META } from '../lib/theme';
+import { StatEmblem } from './StatEmblem';
 
 export function StatStrip({ state }: { state: GameState }) {
   return (
@@ -7,12 +8,12 @@ export function StatStrip({ state }: { state: GameState }) {
       {statSummary(state).map((s) => {
         const color = STAT_META[s.key].color;
         return (
-          <div key={s.key} className="text-center" title={STAT_META[s.key].label}>
-            <div className="text-[11px] font-medium" style={{ color }}>
-              {s.key}
+          <div key={s.key} className="flex flex-col items-center gap-1 text-center" title={STAT_META[s.key].label}>
+            <StatEmblem stat={s.key} size={40} labelled />
+            <div className="text-xl font-bold leading-none tabular-nums" style={{ color }}>
+              {s.level}
             </div>
-            <div className="text-xl font-bold tabular-nums">{s.level}</div>
-            <div className="mx-auto mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-800" aria-hidden>
+            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800" aria-hidden>
               <div className="h-full rounded-full" style={{ width: `${s.ratio * 100}%`, background: color }} />
             </div>
           </div>

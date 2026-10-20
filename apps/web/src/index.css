@@ -4,13 +4,14 @@
 
 html,
 body {
-  background: #0b0f19;
-  color: #e5e7eb;
+  background: #141b3a;
+  color: #f4f1ff;
   color-scheme: dark;
 }
 
-@layer components {
-  .glass {
-    @apply rounded-2xl border border-purple-500/30 bg-slate-900/80 backdrop-blur-md;
-  }
+.glass {
+  border-radius: 1rem;
+  border: 2px solid rgba(168, 230, 255, 0.4);
+  background: rgba(34, 44, 92, 0.88);
+  backdrop-filter: blur(8px);
 }

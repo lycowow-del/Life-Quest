@@ -1,17 +1,27 @@
-import type { Difficulty, MilestoneDay, Rank, Rarity, StatKey } from './types';
+import type { Difficulty, MilestoneDay, Rarity, StatKey, Tier } from './types';
 
 // All balance knobs live here. Rebalance the economy without touching any logic.
 export const STAT_KEYS: readonly StatKey[] = ['STR', 'INT', 'FOC', 'DIS', 'WIS'];
 export const XP_VALUES: Record<Difficulty, number> = { easy: 10, medium: 25, hard: 50 };
 
-export const RANKS: readonly { rank: Rank; minXp: number }[] = [
-  { rank: 'E', minXp: 0 },
-  { rank: 'D', minXp: 500 },
-  { rank: 'C', minXp: 1500 },
-  { rank: 'B', minXp: 3500 },
-  { rank: 'A', minXp: 7000 },
-  { rank: 'S', minXp: 12000 },
+export const TIER_NAMES: readonly Tier[] = [
+  'Iron',
+  'Bronze',
+  'Silver',
+  'Gold',
+  'Platinum',
+  'Emerald',
+  'Diamond',
+  'Master',
+  'Grandmaster',
+  'Challenger',
 ];
+/** Steps 0-27 are Iron IV to Diamond I, 28 Master, 29 Grandmaster, 30-33 Challenger IV to I. */
+export const LADDER_LAST_STEP = 33;
+/** XP to reach step n is scale * n^power, rounded. Tuned so 66 perfect days end around Gold II. */
+export const RANK_CURVE = { scale: 355, power: 1.6, round: 50 };
+/** After Challenger I, every POINT_XP of XP is one point. */
+export const POINT_XP = 10;
 
 export const CYCLE_LENGTH = 66;
 export const MILESTONE_DAYS: readonly MilestoneDay[] = [7, 21, 30, 66];
