@@ -1,0 +1,72 @@
+export type StatKey = 'STR' | 'INT' | 'FOC' | 'DIS' | 'WIS';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening';
+export type Mode = 'standard' | 'hard';
+export type Rank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+export type Rarity = 'common' | 'rare' | 'epic' | 'mythic';
+export type MilestoneDay = 7 | 21 | 30 | 66;
+export type StatXp = Record<StatKey, number>;
+
+/** A recurring habit definition, shown to the player as a daily quest. */
+export interface Habit {
+  id: string;
+  name: string;
+  stat: StatKey;
+  difficulty: Difficulty;
+  timeOfDay: TimeOfDay;
+  createdOnDay: number;
+  archived: boolean;
+}
+
+/** One completed quest on one day (the XP receipt). */
+export interface Quest {
+  habitId: string;
+  day: number;
+  stat: StatKey;
+  xp: number;
+  multiplier: number;
+  balancedBonus: boolean;
+}
+
+export interface DayLog {
+  day: number;
+  completions: Quest[];
+  /** XP actually deducted by Hard Mode when the day closed. */
+  penalty: number;
+  /** Stats that lost a level to neglect decay when the day closed. */
+  decayed: StatKey[];
+  closed: boolean;
+}
+
+export interface Milestone {
+  id: string;
+  day: MilestoneDay;
+  cycle: number;
+  rarity: Rarity;
+  unlockedOnDay: number;
+  archetype: string;
+  topStat: StatKey;
+}
+
+export interface UserProfile {
+  name: string;
+  mode: Mode;
+  totalXp: number;
+  statXp: StatXp;
+  streak: number;
+  bestStreak: number;
+  /** Absolute day counter since the account started. */
+  dayNumber: number;
+  cycle: number;
+  cycleStartDay: number;
+  completedCycles: number;
+  consecutiveMissedDays: number;
+  lastStatDay: Record<StatKey, number>;
+}
+
+export interface GameState {
+  profile: UserProfile;
+  habits: Habit[];
+  logs: Record<number, DayLog>;
+  milestones: Milestone[];
+}
