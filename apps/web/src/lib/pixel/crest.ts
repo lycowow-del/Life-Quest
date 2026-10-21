@@ -1,4 +1,4 @@
-import { OUTLINE, TIER_COLORS, mix } from './palette';
+import { OUTLINE, TIER_COLORS, hexToRgb, mix } from './palette';
 import { SIZE, paint } from './paint';
 
 /**
@@ -70,7 +70,7 @@ export function crestPixels(tierIndex: number, chevrons: number): Uint8ClampedAr
         if (h && y >= top - h) t = 'k';
       }
       for (let k = 0; k < chevrons; k++) {
-        if (dx <= 6 && Math.abs(y - (54 + k * 2.2 + dx * 0.38)) < 0.85) t = 'c';
+        if (dx <= 6 && Math.abs(y - (chevronY(k) + dx * 0.38)) < 0.85) t = 'c';
       }
       if (ti >= 8 && !t) {
         for (const [a, b] of sparks) {
@@ -108,4 +108,30 @@ export function crestPixels(tierIndex: number, chevrons: number): Uint8ClampedAr
     (t, u) => (t === 'w' && u !== 'w') || (t === 'g' && u === 'f'),
     'sc', // sparkles and division chevrons stay unoutlined so thin lines remain visible
   );
+}
+
+/** Y position (0-63) where division chevron k (0 = first) sits at the centre line. */
+export const chevronY = (k: number): number => 54 + k * 2.2;
+
+/**
+ * Only division chevron k, on a transparent 64x64 layer aligned with crestPixels, so the
+ * promotion scene can animate the new chevron slamming into place.
+ */
+export function chevronPixels(tierIndex: number, k: number): Uint8ClampedArray {
+  const ti = Math.max(0, Math.min(9, Math.round(tierIndex)));
+  const [r, g, b] = hexToRgb(TIER_COLORS[ti]!.light);
+  const out = new Uint8ClampedArray(SIZE * SIZE * 4);
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const dx = Math.abs(x - 31.5);
+      if (dx <= 6 && Math.abs(y - (chevronY(k) + dx * 0.38)) < 0.85) {
+        const i = (y * SIZE + x) * 4;
+        out[i] = r;
+        out[i + 1] = g;
+        out[i + 2] = b;
+        out[i + 3] = 255;
+      }
+    }
+  }
+  return out;
 }

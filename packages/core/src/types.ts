@@ -91,19 +91,21 @@ export interface GameState {
 }
 
 export interface RankInfo {
-  /** 0 to 33: Iron IV up to Challenger I. */
+  /** 0 to 30: Iron IV up to Challenger. */
   step: number;
   tierIndex: number;
   tier: Tier;
   division: Division | null;
-  /** Only at Challenger I: points earned beyond the ceiling. */
+  /** Master and above: the running point total since reaching Master. Null below Master. */
   points: number | null;
-  /** e.g. "Gold II", "Master", "Challenger I · 240 pts". */
+  /** e.g. "Gold II", "Master · 120 pts", "Challenger · 1200 pts". */
   label: string;
-  /** Label without points, e.g. "Challenger I". */
+  /** Label without points, e.g. "Gold II" or "Master". */
   shortLabel: string;
   /** Progress toward the next step (or next point at the ceiling), 0 to 1. */
   ratio: number;
   xpToNext: number;
+  /** Points still needed for the next apex tier (Master and Grandmaster only). */
+  pointsToNext: number | null;
   nextLabel: string | null;
 }

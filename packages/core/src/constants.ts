@@ -16,11 +16,17 @@ export const TIER_NAMES: readonly Tier[] = [
   'Grandmaster',
   'Challenger',
 ];
-/** Steps 0-27 are Iron IV to Diamond I, 28 Master, 29 Grandmaster, 30-33 Challenger IV to I. */
-export const LADDER_LAST_STEP = 33;
+/** Steps 0-27 are Iron IV to Diamond I. Steps 28, 29, 30 are Master, Grandmaster, Challenger. */
+export const LADDER_LAST_STEP = 30;
+export const APEX_FIRST_STEP = 28;
+/**
+ * The apex tiers have no divisions. Points are one running total that starts at 0 when you reach
+ * Master and carries through Grandmaster and Challenger. These are the totals where each tier begins.
+ */
+export const APEX_TIER_POINTS = [0, 425, 855] as const;
 /** XP to reach step n is scale * n^power, rounded. Tuned so 66 perfect days end around Gold II. */
 export const RANK_CURVE = { scale: 355, power: 1.6, round: 50 };
-/** After Challenger I, every POINT_XP of XP is one point. */
+/** From Master onward, every POINT_XP of XP is one point. */
 export const POINT_XP = 10;
 
 export const CYCLE_LENGTH = 66;

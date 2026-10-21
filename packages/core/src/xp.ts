@@ -5,6 +5,8 @@ import {
   MULTIPLIER_MAX,
   MULTIPLIER_STEP,
   PAIR_ARCHETYPES,
+  APEX_FIRST_STEP,
+  APEX_TIER_POINTS,
   LADDER_LAST_STEP,
   POINT_XP,
   RANK_CURVE,
@@ -45,16 +47,19 @@ export function levelProgress(xp: number) {
 
 const ROMAN: Record<Division, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
 
-export const stepThreshold = (step: number): number =>
-  step <= 0
-    ? 0
-    : Math.round((RANK_CURVE.scale * Math.pow(step, RANK_CURVE.power)) / RANK_CURVE.round) * RANK_CURVE.round;
+const curve = (n: number): number =>
+  Math.round((RANK_CURVE.scale * Math.pow(n, RANK_CURVE.power)) / RANK_CURVE.round) * RANK_CURVE.round;
+
+/** XP where a step begins. Steps up to Master follow the curve; Grandmaster and Challenger are point offsets from Master. */
+export const stepThreshold = (step: number): number => {
+  if (step <= 0) return 0;
+  if (step <= APEX_FIRST_STEP) return curve(step);
+  return curve(APEX_FIRST_STEP) + APEX_TIER_POINTS[step - APEX_FIRST_STEP]! * POINT_XP;
+};
 
 export function stepInfo(step: number): { tierIndex: number; division: Division | null } {
-  if (step < 28) return { tierIndex: Math.floor(step / 4), division: (4 - (step % 4)) as Division };
-  if (step === 28) return { tierIndex: 7, division: null };
-  if (step === 29) return { tierIndex: 8, division: null };
-  return { tierIndex: 9, division: (4 - (step - 30)) as Division };
+  if (step < APEX_FIRST_STEP) return { tierIndex: Math.floor(step / 4), division: (4 - (step % 4)) as Division };
+  return { tierIndex: 7 + (step - APEX_FIRST_STEP), division: null };
 }
 
 export function stepLabel(step: number): string {
@@ -63,7 +68,7 @@ export function stepLabel(step: number): string {
   return division ? `${name} ${ROMAN[division]}` : name;
 }
 
-/** Where a total XP sits on the 34-step ladder. Past Challenger I, XP becomes points. */
+/** Where a total XP sits on the ladder. From Master up, XP becomes one running point total. */
 export function rankInfo(xp: number): RankInfo {
   const x = Math.max(0, xp);
   let step = 0;
@@ -74,22 +79,25 @@ export function rankInfo(xp: number): RankInfo {
     }
   }
   const { tierIndex, division } = stepInfo(step);
+  const tier = TIER_NAMES[tierIndex]!;
   const base = stepThreshold(step);
-  const into = x - base;
   const shortLabel = stepLabel(step);
+  const apex = step >= APEX_FIRST_STEP;
+  const points = apex ? Math.floor((x - stepThreshold(APEX_FIRST_STEP)) / POINT_XP) : null;
+  const label = points !== null ? `${shortLabel} · ${points} pts` : shortLabel;
   if (step === LADDER_LAST_STEP) {
-    const points = Math.floor(into / POINT_XP);
+    const into = x - base;
     return {
-      step, tierIndex, tier: TIER_NAMES[tierIndex]!, division, points,
-      label: `${shortLabel} · ${points} pts`, shortLabel,
-      ratio: (into % POINT_XP) / POINT_XP, xpToNext: POINT_XP - (into % POINT_XP), nextLabel: null,
+      step, tierIndex, tier, division, points, label, shortLabel,
+      ratio: (into % POINT_XP) / POINT_XP, xpToNext: POINT_XP - (into % POINT_XP), pointsToNext: null, nextLabel: null,
     };
   }
   const top = stepThreshold(step + 1);
   return {
-    step, tierIndex, tier: TIER_NAMES[tierIndex]!, division, points: null,
-    label: shortLabel, shortLabel,
-    ratio: into / (top - base), xpToNext: top - x, nextLabel: stepLabel(step + 1),
+    step, tierIndex, tier, division, points, label, shortLabel,
+    ratio: (x - base) / (top - base), xpToNext: top - x,
+    pointsToNext: apex ? Math.ceil((top - x) / POINT_XP) : null,
+    nextLabel: stepLabel(step + 1),
   };
 }
 

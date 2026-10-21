@@ -45,25 +45,35 @@ describe('levels and ranks', () => {
     expect(lp.xpForNext).toBe(250);
     expect(lp.ratio).toBe(0);
   });
-  it('walks the 34-step ladder', () => {
+  it('walks the 31-step ladder', () => {
     expect(rankInfo(0).label).toBe('Iron IV');
     expect(rankInfo(stepThreshold(4) - 1).label).toBe('Iron I');
     expect(rankInfo(stepThreshold(4)).label).toBe('Bronze IV');
     expect(rankInfo(26954).label).toBe('Gold II');
-    expect(rankInfo(stepThreshold(28)).label).toBe('Master');
-    expect(rankInfo(stepThreshold(29)).label).toBe('Grandmaster');
-    expect(rankInfo(stepThreshold(30)).label).toBe('Challenger IV');
+    expect(rankInfo(stepThreshold(27)).label).toBe('Diamond I');
+    expect(rankInfo(stepThreshold(28) - 1).label).toBe('Diamond I');
   });
   it('has strictly increasing thresholds', () => {
-    for (let i = 1; i <= 33; i++) expect(stepThreshold(i) > stepThreshold(i - 1)).toBe(true);
+    for (let i = 1; i <= 30; i++) expect(stepThreshold(i) > stepThreshold(i - 1)).toBe(true);
   });
-  it('switches to points at Challenger I', () => {
-    const t = stepThreshold(33);
-    expect(rankInfo(t - 1).points).toBeNull();
-    expect(rankInfo(t).label).toBe('Challenger I · 0 pts');
-    expect(rankInfo(t + 255).points).toBe(25);
-    expect(rankInfo(t + 255).nextLabel).toBeNull();
-    expect(rankInfo(10_000_000).step).toBe(33);
+  it('carries one running point total through Master, Grandmaster and Challenger', () => {
+    const m = stepThreshold(28);
+    expect(rankInfo(m).label).toBe('Master · 0 pts');
+    expect(rankInfo(m + 250).label).toBe('Master · 25 pts');
+    expect(rankInfo(m + 4249).label).toBe('Master · 424 pts');
+    expect(rankInfo(m + 4250).label).toBe('Grandmaster · 425 pts');
+    expect(rankInfo(m + 8549).label).toBe('Grandmaster · 854 pts');
+    expect(rankInfo(m + 8550).label).toBe('Challenger · 855 pts');
+    expect(rankInfo(m + 20000).label).toBe('Challenger · 2000 pts');
+    expect(rankInfo(m + 20000).nextLabel).toBeNull();
+    expect(rankInfo(10_000_000).step).toBe(30);
+  });
+  it('reports points to the next apex tier', () => {
+    const m = stepThreshold(28);
+    expect(rankInfo(m + 250).pointsToNext).toBe(400);
+    expect(rankInfo(m + 250).nextLabel).toBe('Grandmaster');
+    expect(rankInfo(0).pointsToNext).toBeNull();
+    expect(rankInfo(m + 8550).pointsToNext).toBeNull();
   });
   it('reports progress to the next step', () => {
     const mid = (stepThreshold(5) + stepThreshold(6)) / 2;

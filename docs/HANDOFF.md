@@ -1,5 +1,12 @@
 # Life Quest handoff
 
+## S4.5 changes (rank ladder and promotion scenes)
+- **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.
+- XP to start of step n (n up to Master) is `355 * n^1.6` rounded to 50. Apex thresholds: Master 73,400 XP, Grandmaster 77,650, Challenger 81,950. 66 perfect days still end near Gold II.
+- `rankInfo` now returns `points` for Master and above, plus `pointsToNext` for Master and Grandmaster. Header shows "N pts to Grandmaster".
+- **Promotion scenes** (`components/PromotionScene.tsx`): a division-up slams the new chevron into the shield (layer from `chevronPixels`, shockwave, shake, particles); a tier-up breaks the old shield and forms the new one under rotating rays. Reduced-motion phones get a short fade. `lib/sound.ts` adds a thud and arpeggio. Hub shows the scene on any rank-up; level-up and skill-card toasts wait until it closes.
+- Points gained inside an apex tier do not trigger a scene; only a tier change does.
+
 ## State after S4 (onboarding)
 - First launch: Welcome, then Onboarding (name, 15-question quiz, plan setup, review), then the Hub. "Skip the quiz" still starts an empty game with the starter pack.
 - Internal ids stay `life-arc-66` (IndexedDB name, save-file `app` field) so older saves keep working. Old saves load fine: new profile fields are optional.
@@ -22,6 +29,7 @@
 - Selectors: `bossWeekStatus`, `upcomingUnlocks`; `activeHabits` now excludes locked quests.
 
 ## Not done yet
+- Sound has no mute toggle yet (add to Settings).
 - Retaking the quiz from Settings. Quiz answers are not saved if the app is closed mid-quiz.
 - Pet companion, skill card collection (S9), offline install and reminders (S5), Focus timer and journal (S6), heatmap and radar (S8).
 - Dev "Skip to next day" must be removed before v1.0.

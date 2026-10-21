@@ -1,12 +1,13 @@
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Settings } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { STARTER_HABITS, activeHabits, type GameState, type Habit } from '@la66/core';
-import { STAT_META, TIER_COLOR } from '../lib/theme';
+import { STARTER_HABITS, activeHabits, rankInfo, type GameState, type Habit, type RankInfo } from '@la66/core';
+import { STAT_META } from '../lib/theme';
 import { useGame } from '../store/gameStore';
 import { AddQuestSheet } from './AddQuestSheet';
 import { Burst } from './Burst';
 import { PlayerHeader } from './PlayerHeader';
+import { PromotionScene } from './PromotionScene';
 import { QuestList } from './QuestList';
 import type { Origin } from './QuestRow';
 import { SettingsSheet } from './SettingsSheet';
@@ -24,8 +25,10 @@ export function Hub({ state }: { state: GameState }) {
   const addHabits = useGame((s) => s.addHabits);
   const [bursts, setBursts] = useState<BurstItem[]>([]);
   const [toast, setToast] = useState<ToastData | null>(null);
+  const [promo, setPromo] = useState<{ from: RankInfo; to: RankInfo } | null>(null);
   const [sheet, setSheet] = useState<'add' | 'settings' | null>(null);
   const seq = useRef(0);
+  const pending = useRef<ToastData | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -34,8 +37,16 @@ export function Hub({ state }: { state: GameState }) {
   }, [toast]);
 
   const removeBurst = useCallback((id: number) => setBursts((b) => b.filter((x) => x.id !== id)), []);
+  const closePromo = useCallback(() => {
+    setPromo(null);
+    if (pending.current) {
+      setToast(pending.current);
+      pending.current = null;
+    }
+  }, []);
 
   const onComplete = (habit: Habit, origin: Origin) => {
+    const before = rankInfo(state.profile.totalXp);
     const r = complete(habit.id);
     if (!r || !r.ok) return;
     const id = ++seq.current;
@@ -43,15 +54,16 @@ export function Hub({ state }: { state: GameState }) {
     navigator.vibrate?.(15);
 
     const card = r.newMilestones[0];
-    if (card) setToast({ id, title: 'Skill card unlocked', sub: `Day ${card.day} · ${card.rarity}`, color: '#A8E6FF' });
-    else if (r.rankedUp)
-      setToast({
-        id,
-        title: r.tierUp ? `Promoted to ${r.newRank.tier}` : `Promoted to ${r.newRank.shortLabel}`,
-        sub: r.tierUp ? r.newRank.shortLabel : 'Division up',
-        color: TIER_COLOR[r.newRank.tier],
-      });
-    else if (r.leveledUp) setToast({ id, title: `Level ${r.newLevel}`, sub: 'Level up', color: '#FFB3E6' });
+    let next: ToastData | null = null;
+    if (card) next = { id, title: 'Skill card unlocked', sub: `Day ${card.day} · ${card.rarity}`, color: '#A8E6FF' };
+    else if (r.leveledUp) next = { id, title: `Level ${r.newLevel}`, sub: 'Level up', color: '#FFB3E6' };
+
+    if (r.rankedUp) {
+      pending.current = next; // shown after the promotion scene
+      setPromo({ from: before, to: r.newRank });
+    } else if (next) {
+      setToast(next);
+    }
   };
 
   const empty = activeHabits(state).length === 0;
@@ -94,6 +106,7 @@ export function Hub({ state }: { state: GameState }) {
           <Burst key={b.id} x={b.x} y={b.y} color={b.color} label={b.label} onDone={() => removeBurst(b.id)} />
         ))}
       </AnimatePresence>
+      <AnimatePresence>{promo && <PromotionScene key={promo.to.step} from={promo.from} to={promo.to} onDone={closePromo} />}</AnimatePresence>
       <Toast toast={toast} />
       <AddQuestSheet open={sheet === 'add'} onClose={() => setSheet(null)} />
       <SettingsSheet open={sheet === 'settings'} onClose={() => setSheet(null)} state={state} />

@@ -92,7 +92,11 @@ export function PlayerHeader({ state }: { state: GameState }) {
           <div className="h-full rounded-full" style={{ width: `${rk.ratio * 100}%`, background: color }} />
         </div>
         <p className="mt-1 text-[11px] tabular-nums text-slate-400">
-          {rk.nextLabel ? `${rk.xpToNext.toLocaleString()} XP to ${rk.nextLabel}` : `${rk.xpToNext} XP to your next point`}
+          {rk.nextLabel
+            ? rk.pointsToNext !== null
+              ? `${rk.pointsToNext} pts to ${rk.nextLabel}`
+              : `${rk.xpToNext.toLocaleString()} XP to ${rk.nextLabel}`
+            : `${rk.xpToNext} XP to your next point`}
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crestPixels } from './crest';
+import { chevronPixels, crestPixels } from './crest';
 import { emblemPixels } from './emblem';
 
 const opaque = (p: Uint8ClampedArray): number => {
@@ -41,5 +41,22 @@ describe('stat emblems', () => {
     }
     for (let i = 0; i < imgs.length; i++)
       for (let j = i + 1; j < imgs.length; j++) expect(same(imgs[i]!, imgs[j]!)).toBe(false);
+  });
+});
+
+describe('chevron layer', () => {
+  it('lines up exactly with the chevron drawn on the crest', () => {
+    const base = crestPixels(3, 2);
+    const layer = chevronPixels(3, 1); // the second chevron
+    let hits = 0;
+    for (let i = 3; i < layer.length; i += 4) {
+      if (layer[i] === 0) continue;
+      hits++;
+      expect(base[i - 3]).toBe(layer[i - 3]);
+      expect(base[i - 2]).toBe(layer[i - 2]);
+      expect(base[i - 1]).toBe(layer[i - 1]);
+    }
+    expect(hits > 8).toBe(true);
+    expect(opaque(crestPixels(3, 2)) > opaque(crestPixels(3, 1))).toBe(true);
   });
 });
