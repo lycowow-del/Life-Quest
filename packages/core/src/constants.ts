@@ -67,3 +67,19 @@ export const PAIR_ARCHETYPES: Record<string, string> = {
   'INT+WIS': 'Archmage',
   'STR+WIS': 'Warden',
 };
+
+// Boss week: cycle days 15-21, the end of the ramp-up. The weakest stat's quests give 2x XP,
+// and clearing every one of them on every day pays a chest.
+export const BOSS_START_DAY = 15;
+export const BOSS_END_DAY = 21;
+export const BOSS_XP_MULT = 2;
+export const BOSS_CHEST_XP = 250;
+
+// Onboarding ramp: quests unlock by difficulty so the first weeks start easy.
+export const RAMP_UNLOCK_DAY: Record<Difficulty, number> = { easy: 1, medium: 8, hard: 15 };
+export const QUEST_COUNT_MIN = 3;
+export const QUEST_COUNT_MAX = 8;
+export const QUEST_COUNT_DEFAULT = 5;
+/** Quiz stat score is 0-9 (three questions, 0-3 each). It maps to a starting stat level 0-4. */
+export const QUIZ_MAX_STAT_SCORE = 9;
+export const START_STAT_MAX_LEVEL = 4;

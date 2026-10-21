@@ -1,5 +1,9 @@
 import {
   BALANCED_DAY_MIN_STATS,
+  BOSS_CHEST_XP,
+  BOSS_END_DAY,
+  BOSS_START_DAY,
+  BOSS_XP_MULT,
   CYCLE_LENGTH,
   HARD_CYCLE_RESTART_MISSES,
   HARD_MISS_PENALTY_RATIO,
@@ -37,6 +41,24 @@ import {
 
 export const cycleDay = (p: UserProfile): number => p.dayNumber - p.cycleStartDay + 1;
 
+export const isBossWeek = (p: UserProfile): boolean =>
+  !!p.bossStat && cycleDay(p) >= BOSS_START_DAY && cycleDay(p) <= BOSS_END_DAY;
+
+/** True if every boss-stat quest was completed on every boss-week day of the current cycle. */
+export function bossCleared(state: GameState): boolean {
+  const p = state.profile;
+  if (!p.bossStat) return false;
+  const first = p.cycleStartDay + BOSS_START_DAY - 1;
+  const last = p.cycleStartDay + BOSS_END_DAY - 1;
+  const quests = state.habits.filter((h) => !h.archived && h.stat === p.bossStat && h.createdOnDay <= first);
+  if (quests.length === 0) return false;
+  for (let d = first; d <= last; d++) {
+    const done = new Set((state.logs[d]?.completions ?? []).map((c) => c.habitId));
+    if (!quests.every((h) => done.has(h.id))) return false;
+  }
+  return true;
+}
+
 export const getLog = (state: GameState, day: number): DayLog =>
   state.logs[day] ?? { day, completions: [], penalty: 0, decayed: [], closed: false };
 
@@ -61,6 +83,8 @@ export function createInitialState(
       completedCycles: 0,
       consecutiveMissedDays: 0,
       lastStatDay,
+      bossStat: null,
+      bossChestClaimedCycle: 0,
     },
     habits: [],
     logs: {},
@@ -70,7 +94,7 @@ export function createInitialState(
 
 export function addHabit(
   state: GameState,
-  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string },
+  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string; activeFromDay?: number },
 ): GameState {
   const habit: Habit = {
     id: input.id ?? `h${state.habits.length + 1}`,
@@ -78,7 +102,7 @@ export function addHabit(
     stat: input.stat,
     difficulty: input.difficulty,
     timeOfDay: input.timeOfDay,
-    createdOnDay: state.profile.dayNumber,
+    createdOnDay: input.activeFromDay ?? state.profile.dayNumber,
     archived: false,
   };
   return { ...state, habits: [...state.habits, habit] };
@@ -128,7 +152,7 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     newMilestones: [],
   });
 
-  const habit = state.habits.find((h) => h.id === habitId && !h.archived);
+  const habit = state.habits.find((h) => h.id === habitId && !h.archived && h.createdOnDay <= p.dayNumber);
   if (!habit) return fail('unknown_habit');
   const day = p.dayNumber;
   const log = getLog(state, day);
@@ -138,7 +162,8 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
   const streak = log.completions.length === 0 ? p.streak + 1 : p.streak;
   const stats = new Set<StatKey>([...log.completions.map((c) => c.stat), habit.stat]);
   const balanced = stats.size >= BALANCED_DAY_MIN_STATS;
-  const xp = questXp(habit.difficulty, streak, balanced);
+  const boss = isBossWeek(p) && p.bossStat === habit.stat;
+  const xp = questXp(habit.difficulty, streak, balanced, boss ? BOSS_XP_MULT : 1);
   const receipt: Quest = {
     habitId,
     day,
@@ -146,6 +171,7 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     xp,
     multiplier: consistencyMultiplier(streak),
     balancedBonus: balanced,
+    boss,
   };
 
   const next: GameState = {
@@ -257,12 +283,32 @@ export function endDay(state: GameState): GameState {
     decayed = r.decayed;
   }
 
+  // Boss chest: paid when the last boss-week day closes, once per cycle.
+  let chest = 0;
+  if (
+    p0.bossStat &&
+    cycleDay(p0) === BOSS_END_DAY &&
+    p0.bossChestClaimedCycle !== p0.cycle &&
+    bossCleared(state)
+  ) {
+    chest = BOSS_CHEST_XP;
+    totalXp += chest;
+    statXp[p0.bossStat] += chest;
+  }
+
   const active = log.completions.length > 0;
   const missed = active ? 0 : p0.consecutiveMissedDays + 1;
   const closed: GameState = {
     ...state,
-    profile: { ...p0, totalXp, statXp, streak: active ? p0.streak : 0, consecutiveMissedDays: missed },
-    logs: { ...state.logs, [day]: { ...log, penalty, decayed, closed: true } },
+    profile: {
+      ...p0,
+      totalXp,
+      statXp,
+      streak: active ? p0.streak : 0,
+      consecutiveMissedDays: missed,
+      bossChestClaimedCycle: chest ? p0.cycle : (p0.bossChestClaimedCycle ?? 0),
+    },
+    logs: { ...state.logs, [day]: { ...log, penalty, decayed, ...(chest ? { chest } : {}), closed: true } },
   };
   const next = checkMilestones(closed).state;
   const np = next.profile;

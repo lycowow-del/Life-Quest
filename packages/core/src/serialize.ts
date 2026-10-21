@@ -42,6 +42,8 @@ function validateState(s: unknown): string | null {
   if ((p.dayNumber as number) < 1 || (p.cycle as number) < 1) return 'Profile day or cycle is invalid.';
   if (!statMap(p.statXp)) return 'Stat XP is invalid.';
   if (!statMap(p.lastStatDay)) return 'Stat history is invalid.';
+  if (p.bossStat !== undefined && p.bossStat !== null && !oneOf(p.bossStat, STAT_KEYS)) return 'Boss stat is invalid.';
+  if (p.bossChestClaimedCycle !== undefined && !isNum(p.bossChestClaimedCycle)) return 'Boss chest record is invalid.';
 
   if (!Array.isArray(s.habits)) return 'Habits are missing.';
   for (const h of s.habits) {

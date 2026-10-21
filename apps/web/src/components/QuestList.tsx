@@ -1,15 +1,17 @@
 import { Moon, Sun, Sunrise, Trophy } from 'lucide-react';
 import {
   activeHabits,
+  bossWeekStatus,
   groupByTimeOfDay,
   penaltyAtRisk,
   questXp,
   todayProgress,
+  upcomingUnlocks,
   type GameState,
   type Habit,
   type TimeOfDay,
 } from '@la66/core';
-import { TIME_LABEL } from '../lib/theme';
+import { STAT_META, TIME_LABEL } from '../lib/theme';
 import { QuestRow, type Origin } from './QuestRow';
 
 const ICON = { morning: Sunrise, afternoon: Sun, evening: Moon } as const;
@@ -25,6 +27,9 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
   const projectedStreak = today.length === 0 ? p.streak + 1 : p.streak;
   const cleared = progress.total > 0 && progress.done === progress.total;
   const balanced = today.some((c) => c.balancedBonus);
+  const boss = bossWeekStatus(state);
+  const bossName = boss.stat ? STAT_META[boss.stat].label : '';
+  const upcoming = upcomingUnlocks(state);
 
   return (
     <section className="space-y-5" aria-label="Daily quests">
@@ -35,6 +40,24 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
         </span>
       </div>
 
+      {boss.active && (
+        <div className="glass border-arc-violet/70 p-3 text-sm shadow-glow-violet">
+          <p className="font-bold text-arc-violet">
+            Boss week: {bossName} ({boss.daysLeft} {boss.daysLeft === 1 ? 'day' : 'days'} left)
+          </p>
+          <p className="mt-1 text-xs text-slate-300">
+            {bossName} quests give {boss.multiplier}x XP. Clear every one of them each day to win a {boss.chestXp} XP chest.
+          </p>
+        </div>
+      )}
+      {!boss.active && boss.startsIn > 0 && boss.startsIn <= 7 && (
+        <p className="px-1 text-xs text-arc-violet">
+          Boss week on {bossName} starts in {boss.startsIn} {boss.startsIn === 1 ? 'day' : 'days'}.
+        </p>
+      )}
+      {boss.chestClaimed && (
+        <p className="px-1 text-xs text-arc-emerald">Boss chest claimed: +{boss.chestXp} XP</p>
+      )}
       {cleared && (
         <div className="glass border-arc-emerald/60 p-3 text-center shadow-glow-emerald">
           <Trophy className="mx-auto mb-1 text-arc-emerald" size={22} />
@@ -71,6 +94,12 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
           </div>
         );
       })}
+
+      {upcoming.length > 0 && (
+        <p className="px-1 text-center text-xs text-slate-400">
+          More quests unlock: {upcoming.map((u) => `${u.count} on day ${u.day}`).join(', ')}.
+        </p>
+      )}
 
       {risk > 0 && (
         <p className="rounded-xl border border-arc-crimson/40 bg-arc-crimson/10 p-3 text-center text-sm text-arc-crimson">

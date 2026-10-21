@@ -19,3 +19,6 @@ export const STARTER_HABITS: readonly HabitInput[] = [
   { name: 'Meditate 10 min', stat: 'WIS', difficulty: 'medium', timeOfDay: 'evening' },
   { name: 'Phone off at 10 pm', stat: 'DIS', difficulty: 'easy', timeOfDay: 'evening' },
 ];
+
+/** A quest in an onboarding roadmap. activeFromDay is the game day it unlocks. */
+export type PlannedHabit = HabitInput & { activeFromDay: number };

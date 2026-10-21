@@ -38,6 +38,8 @@ export interface Quest {
   xp: number;
   multiplier: number;
   balancedBonus: boolean;
+  /** True when boss week doubled this completion. */
+  boss?: boolean;
 }
 
 export interface DayLog {
@@ -47,6 +49,8 @@ export interface DayLog {
   penalty: number;
   /** Stats that lost a level to neglect decay when the day closed. */
   decayed: StatKey[];
+  /** Boss chest XP paid out when this day closed. */
+  chest?: number;
   closed: boolean;
 }
 
@@ -74,6 +78,9 @@ export interface UserProfile {
   completedCycles: number;
   consecutiveMissedDays: number;
   lastStatDay: Record<StatKey, number>;
+  /** Weakest stat from the onboarding quiz. Its quests get 2x XP during boss week. */
+  bossStat?: StatKey | null;
+  bossChestClaimedCycle?: number;
 }
 
 export interface GameState {

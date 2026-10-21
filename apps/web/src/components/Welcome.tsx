@@ -4,7 +4,7 @@ import { useGame } from '../store/gameStore';
 import { ImportButton } from './ImportButton';
 import { RankCrest } from './RankCrest';
 
-export function Welcome() {
+export function Welcome({ onBegin }: { onBegin: () => void }) {
   const startNewGame = useGame((s) => s.startNewGame);
   const loadError = useGame((s) => s.loadError);
   const [msg, setMsg] = useState('');
@@ -16,12 +16,15 @@ export function Welcome() {
         <p className="text-slate-300">Build your character by building your habits. 66 days to turn a routine into automatic.</p>
       </div>
       {loadError && <p className="text-center text-sm text-arc-crimson">{loadError}</p>}
-      <button type="button" onClick={() => startNewGame({ name: 'Hunter' })} className="rounded-xl bg-arc-violet py-4 text-lg font-bold text-obsidian shadow-glow-violet">
+      <button type="button" onClick={onBegin} className="rounded-xl bg-arc-violet py-4 text-lg font-bold text-obsidian shadow-glow-violet">
         Begin your quest
       </button>
       <ImportButton className="rounded-xl border-2 border-arc-cyan/40 bg-slate-800 py-3 text-sm" onResult={setMsg}>
         Import a save
       </ImportButton>
+      <button type="button" onClick={() => startNewGame({ name: 'Hunter' })} className="text-sm text-slate-400 underline">
+        Skip the quiz
+      </button>
       {msg && <p className="text-center text-sm text-slate-300">{msg}</p>}
     </main>
   );

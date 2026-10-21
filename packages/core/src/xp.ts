@@ -19,9 +19,17 @@ import type { Difficulty, Division, RankInfo, StatKey, StatXp } from './types';
 export const consistencyMultiplier = (streakDays: number): number =>
   Math.round(Math.min(MULTIPLIER_MAX, 1 + MULTIPLIER_STEP * Math.max(0, streakDays)) * 1000) / 1000;
 
-export const questXp = (difficulty: Difficulty, streakDays: number, balancedDay: boolean): number =>
+export const questXp = (
+  difficulty: Difficulty,
+  streakDays: number,
+  balancedDay: boolean,
+  bossMultiplier = 1,
+): number =>
   Math.round(
-    XP_VALUES[difficulty] * consistencyMultiplier(streakDays) * (balancedDay ? BALANCED_DAY_BONUS : 1),
+    XP_VALUES[difficulty] *
+      consistencyMultiplier(streakDays) *
+      (balancedDay ? BALANCED_DAY_BONUS : 1) *
+      bossMultiplier,
   );
 
 export const xpForLevel = (level: number): number => LEVEL_XP_BASE * (level - 1) ** 2;

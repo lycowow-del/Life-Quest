@@ -7,3 +7,4 @@ export * from './sync';
 export * from './serialize';
 export * from './selectors';
 export * from './starters';
+export * from './onboarding';

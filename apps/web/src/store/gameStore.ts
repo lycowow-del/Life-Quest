@@ -5,6 +5,7 @@ import {
   addHabit as addHabitToState,
   archiveHabit as archiveHabitInState,
   completeQuest,
+  createGameFromPlan,
   createInitialState,
   exportSave,
   parseSave,
@@ -15,6 +16,7 @@ import {
   type Difficulty,
   type GameState,
   type Mode,
+  type OnboardingPlan,
   type StatKey,
   type TimeOfDay,
 } from '@la66/core';
@@ -44,6 +46,7 @@ interface GameStore {
   loadError: string | null;
   hydrate: () => Promise<void>;
   startNewGame: (opts: { name?: string; mode?: Mode }) => void;
+  startFromOnboarding: (plan: OnboardingPlan) => void;
   complete: (habitId: string) => CompleteResult | null;
   addHabit: (input: NewHabit) => void;
   addHabits: (inputs: readonly NewHabit[]) => void;
@@ -98,6 +101,10 @@ export const useGame = create<GameStore>()((set, get) => {
 
     startNewGame(opts) {
       commit(createInitialState(opts), todayKey());
+    },
+
+    startFromOnboarding(plan) {
+      commit(createGameFromPlan(plan), todayKey());
     },
 
     complete(habitId) {
