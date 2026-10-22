@@ -1,14 +1,26 @@
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Settings } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { STARTER_HABITS, activeHabits, rankInfo, type GameState, type Habit, type RankInfo } from '@la66/core';
+import {
+  STARTER_HABITS,
+  activeHabits,
+  rankInfo,
+  reminderBanner,
+  toDateKey,
+  type GameState,
+  type Habit,
+  type RankInfo,
+} from '@la66/core';
+import { contextFor, useReminders } from '../lib/useReminders';
 import { STAT_META } from '../lib/theme';
 import { useGame } from '../store/gameStore';
+import { useSettings } from '../store/settingsStore';
 import { AddQuestSheet } from './AddQuestSheet';
 import { Burst } from './Burst';
 import { PlayerHeader } from './PlayerHeader';
 import { PromotionScene } from './PromotionScene';
 import { QuestList } from './QuestList';
+import { ReminderBanner } from './ReminderBanner';
 import type { Origin } from './QuestRow';
 import { SettingsSheet } from './SettingsSheet';
 import { StatStrip } from './StatStrip';
@@ -28,6 +40,20 @@ export function Hub({ state }: { state: GameState }) {
   const [promo, setPromo] = useState<{ from: RankInfo; to: RankInfo } | null>(null);
   const [sheet, setSheet] = useState<'add' | 'settings' | null>(null);
   const seq = useRef(0);
+  const reminders = useSettings((s) => s.reminders);
+  const vibrate = useSettings((s) => s.vibrate);
+  const [dismissedDay, setDismissedDay] = useState('');
+  const [, setTick] = useState(0);
+  useReminders(state);
+
+  // Re-evaluate the reminder banner as the clock moves.
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const now = new Date();
+  const banner = reminderBanner(reminders, contextFor(state, now, {}));
+  const todayKey = toDateKey(now);
   const pending = useRef<ToastData | null>(null);
 
   useEffect(() => {
@@ -51,7 +77,7 @@ export function Hub({ state }: { state: GameState }) {
     if (!r || !r.ok) return;
     const id = ++seq.current;
     setBursts((b) => [...b, { id, ...origin, color: STAT_META[habit.stat].color, label: `+${r.xpGained} XP` }]);
-    navigator.vibrate?.(15);
+    if (vibrate) navigator.vibrate?.(15);
 
     const card = r.newMilestones[0];
     let next: ToastData | null = null;
@@ -86,6 +112,9 @@ export function Hub({ state }: { state: GameState }) {
       </div>
 
       <main className="space-y-4">
+        {banner && dismissedDay !== todayKey && (
+          <ReminderBanner text={banner.text} onClose={() => setDismissedDay(todayKey)} />
+        )}
         <PlayerHeader state={state} />
         <StatStrip state={state} />
         {empty ? (

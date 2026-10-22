@@ -1,3 +1,5 @@
+import { useSettings } from '../store/settingsStore';
+
 let ctx: AudioContext | null = null;
 
 function tone(c: AudioContext, freq: number, start: number, dur: number, gain: number, type: OscillatorType): void {
@@ -16,6 +18,7 @@ function tone(c: AudioContext, freq: number, start: number, dur: number, gain: n
 
 /** Impact thud timed to the slam, then a rising arpeggio. Safe to call anywhere; fails silently. */
 export function playPromotionSound(kind: 'division' | 'tier'): void {
+  if (!useSettings.getState().sound) return;
   try {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;

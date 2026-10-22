@@ -1,5 +1,25 @@
 # Life Quest handoff
 
+## Current version: 0.5.0 (S5). See docs/CHANGELOG.md for the history.
+
+## S5 changes (offline, updates, install, reminders)
+- `vite.config.ts`: `registerType: 'prompt'`, `workbox.importScripts: ['sw-extras.js']`, and build info (`__APP_VERSION__`, `__BUILD_SHA__` from GITHUB_SHA, `__BUILD_DATE__`).
+- `public/sw-extras.js` adds a `notificationclick` handler so tapping a reminder opens the app.
+- `components/PwaBanner.tsx` uses `useRegisterSW` from `virtual:pwa-register/react` (types come from `vite-plugin-pwa/react` in tsconfig): offline-ready toast, Reload banner, hourly update check.
+- `lib/pwa/useInstall.ts` captures `beforeinstallprompt` at module load; Settings shows Install app, iPhone instructions, or an installed state.
+- Reminders: pure logic in `packages/core/src/reminders.ts` (`dueNotifications`, `reminderMessage`, `reminderBanner`; a notification only fires within 15 minutes of the set time, once per day; Morning needs nothing done yet, Evening needs unfinished quests). `lib/useReminders.ts` checks every 30 s and on returning to the app, and sends through the service worker (`lib/notify.ts`). `components/ReminderBanner.tsx` shows the in-app banner when the time has passed.
+- `store/settingsStore.ts` (localStorage key `lq:settings`): reminders, lastFired, sound, vibrate.
+- Settings sheet: Hard Mode, Reminders (switch plus time each, permission help, test notification), sound and vibration, Install, export and import, dev tools, reset, version line.
+- Root `eslint.config.js` now ignores `apps/web/public/**`.
+
+## Limits
+- A phone cannot wake a closed web app, so reminders do not fire with the app fully closed. Options later: a small push server (Brave needs "Use Google Services for Push Messaging" turned on in its privacy settings) or an APK wrapper with native scheduling.
+- The service worker and install flow could not be run in the build environment; verify on a device.
+- No quiz retake, no skill card collection screen, no pet yet. Dev "Skip to next day" must be removed before v1.0.
+
+## Next: S6 (Focus timer and journal)
+Pomodoro Focus Forge that awards FOC XP, mood tap and journal that awards WIS XP, ambient audio cues.
+
 ## S4.5 changes (rank ladder and promotion scenes)
 - **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.
 - XP to start of step n (n up to Master) is `355 * n^1.6` rounded to 50. Apex thresholds: Master 73,400 XP, Grandmaster 77,650, Challenger 81,950. 66 perfect days still end near Gold II.
