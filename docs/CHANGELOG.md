@@ -2,7 +2,15 @@
 
 Version numbers follow the build sessions. The version shows in the app under Settings, with the build commit and date.
 
-## 0.5.0: S5 offline, updates, install, reminders (current)
+## 0.5.5: progressive quests (current)
+- Measurable quests (minutes, pages, steps, reps, lines) now grow: +25% every 5 completed days. Missed days only pause the count.
+- Targets round to tidy numbers and are capped near 2x (for example 60 min becomes 75, 95, then 115). Each quest can also have its own maximum.
+- XP grows with the target (1.25x, 1.56x, 1.95x). A level-up shows a banner, and each quest shows "+25% after N more days".
+- About 20 library quests are measurable (Workout, Step goal, Read a book, Study, Focus session, Deep work, Meditate and more); yes-or-no quests stay as they are.
+- Your own quests can track an amount. Settings has a new "Your quests" list with a growth switch and Remove for each quest.
+- Boss-week double XP and the target scaling now show in the projected XP on each quest.
+
+## 0.5.0: S5 offline, updates, install, reminders
 - "Ready to use offline" message the first time the app is cached.
 - Update prompt: a banner with a Reload button when a new version is waiting (checked every hour while open).
 - Install button in Settings (Android and desktop Chrome and Brave), a how-to for iPhone, and an "Installed" state.

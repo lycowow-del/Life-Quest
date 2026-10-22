@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GameState, ReminderKind } from '@la66/core';
+import { questLabel, type GameState, type ReminderKind } from '@la66/core';
 import { notificationsSupported, requestNotificationPermission, showNotification } from '../lib/notify';
 import { useInstall } from '../lib/pwa/useInstall';
 import { BUILD_DATE, BUILD_SHA, VERSION_LABEL } from '../lib/version';
@@ -118,6 +118,26 @@ export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose
             <p className="text-sm font-medium">Vibration</p>
             <Switch on={settings.vibrate} label="Vibration" onChange={() => settings.setVibrate(!settings.vibrate)} />
           </div>
+        </section>
+
+        <section className="space-y-3" aria-label="Your quests">
+          <p className="font-bold">Your quests</p>
+          {state.habits.filter((h) => !h.archived).length === 0 && <p className="text-xs text-slate-400">No quests yet.</p>}
+          {state.habits
+            .filter((h) => !h.archived)
+            .map((h) => (
+              <div key={h.id} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{questLabel(h)}</p>
+                  {h.createdOnDay > state.profile.dayNumber && <p className="text-xs text-slate-400">Unlocks on day {h.createdOnDay}</p>}
+                </div>
+                {h.target && <Switch on={!h.target.frozen} label={`Grow ${h.name}`} onChange={() => g.toggleGrowth(h.id)} />}
+                <button type="button" aria-label={`Remove ${h.name}`} onClick={() => g.archiveHabit(h.id)} className="rounded-lg px-2 py-1 text-xs text-arc-crimson active:bg-slate-800">
+                  Remove
+                </button>
+              </div>
+            ))}
+          <p className="text-xs text-slate-400">The switch lets a measurable quest grow 25% every 5 completed days. Turn it off to keep the amount where it is.</p>
         </section>
 
         <section className="space-y-2" aria-label="Install">

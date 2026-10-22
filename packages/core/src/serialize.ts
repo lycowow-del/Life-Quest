@@ -51,6 +51,14 @@ function validateState(s: unknown): string | null {
       !oneOf(h.difficulty, ['easy', 'medium', 'hard']) ||
       !oneOf(h.timeOfDay, ['morning', 'afternoon', 'evening']) ||
       !isNum(h.createdOnDay) || typeof h.archived !== 'boolean') return 'A habit is invalid.';
+    if (h.target !== undefined) {
+      const t = h.target;
+      if (!isObj(t) || !isNum(t.base) || t.base <= 0 || !isNum(t.round) || t.round <= 0 ||
+        !oneOf(t.unit, ['min', 'pages', 'steps', 'reps', 'lines']) ||
+        !isNum(t.completions) || t.completions < 0 ||
+        (t.max !== undefined && !isNum(t.max)) ||
+        (t.frozen !== undefined && typeof t.frozen !== 'boolean')) return 'A quest target is invalid.';
+    }
   }
   if (!isObj(s.logs)) return 'Logs are missing.';
   for (const log of Object.values(s.logs)) {

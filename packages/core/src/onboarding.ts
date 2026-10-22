@@ -8,7 +8,7 @@ import {
 } from './constants';
 import { addHabit, createInitialState } from './engine';
 import type { PlannedHabit } from './starters';
-import type { Difficulty, GameState, Mode, StatKey, StatXp, TimeOfDay } from './types';
+import type { Difficulty, GameState, Mode, QuestTargetInput, StatKey, StatXp, TargetUnit, TimeOfDay } from './types';
 import { xpForStatLevel } from './xp';
 
 export type StatScores = Record<StatKey, number>;
@@ -81,43 +81,47 @@ export interface LibraryQuest {
   name: string;
   difficulty: Difficulty;
   timeOfDay: TimeOfDay;
+  /** Present on measurable quests, which grow 25% every 5 completed days. */
+  target?: QuestTargetInput;
 }
-const lq = (name: string, difficulty: Difficulty, timeOfDay: TimeOfDay): LibraryQuest => ({ name, difficulty, timeOfDay });
+const T = (base: number, unit: TargetUnit, round: number, max: number): QuestTargetInput => ({ base, unit, round, max });
+const lq = (name: string, difficulty: Difficulty, timeOfDay: TimeOfDay, target?: QuestTargetInput): LibraryQuest =>
+  target ? { name, difficulty, timeOfDay, target } : { name, difficulty, timeOfDay };
 
-/** Three quests per stat per difficulty. */
+/** Three quests per stat per difficulty. Quests with a target are measurable and level up. */
 export const QUEST_LIBRARY: Record<StatKey, readonly LibraryQuest[]> = {
   STR: [
-    lq('Stretch for 5 minutes', 'easy', 'morning'),
-    lq('Walk for 10 minutes', 'easy', 'afternoon'),
-    lq('Do 10 push-ups', 'easy', 'evening'),
-    lq('Workout for 20 minutes', 'medium', 'morning'),
-    lq('Walk 8,000 steps', 'medium', 'afternoon'),
+    lq('Stretch', 'easy', 'morning', T(5, 'min', 1, 15)),
+    lq('Walk', 'easy', 'afternoon', T(10, 'min', 1, 30)),
+    lq('Do push-ups', 'easy', 'evening', T(10, 'reps', 1, 30)),
+    lq('Workout', 'medium', 'morning', T(20, 'min', 5, 60)),
+    lq('Step goal', 'medium', 'afternoon', T(8000, 'steps', 500, 15000)),
     lq('Bodyweight circuit', 'medium', 'evening'),
-    lq('Workout for 45 minutes', 'hard', 'morning'),
-    lq('Run or cycle for 30 minutes', 'hard', 'afternoon'),
+    lq('Long workout', 'hard', 'morning', T(45, 'min', 5, 90)),
+    lq('Run or cycle', 'hard', 'afternoon', T(30, 'min', 5, 75)),
     lq('Strength session', 'hard', 'evening'),
   ],
   INT: [
-    lq('Read 5 pages', 'easy', 'evening'),
+    lq('Read pages', 'easy', 'evening', T(5, 'pages', 1, 15)),
     lq('Learn one new fact', 'easy', 'afternoon'),
     lq('Watch one short lesson', 'easy', 'morning'),
-    lq('Read 20 pages', 'medium', 'evening'),
-    lq('Practice a skill for 20 minutes', 'medium', 'afternoon'),
+    lq('Read a book', 'medium', 'evening', T(20, 'pages', 5, 50)),
+    lq('Practice a skill', 'medium', 'afternoon', T(20, 'min', 5, 60)),
     lq('Take notes on something new', 'medium', 'morning'),
-    lq('Study for 1 hour', 'hard', 'afternoon'),
+    lq('Study', 'hard', 'afternoon', T(60, 'min', 5, 120)),
     lq('Finish a lesson and summarize it', 'hard', 'evening'),
     lq('Build or write something new', 'hard', 'morning'),
   ],
   FOC: [
-    lq('Phone away for 15 minutes', 'easy', 'morning'),
-    lq('Clear your desk for 5 minutes', 'easy', 'afternoon'),
+    lq('Phone away', 'easy', 'morning', T(15, 'min', 5, 45)),
+    lq('Clear your desk', 'easy', 'afternoon'),
     lq('Write down your top task', 'easy', 'morning'),
-    lq('One 25-minute focus session', 'medium', 'afternoon'),
-    lq('Single-task for 45 minutes', 'medium', 'morning'),
+    lq('Focus session', 'medium', 'afternoon', T(25, 'min', 5, 60)),
+    lq('Single-task', 'medium', 'morning', T(45, 'min', 5, 90)),
     lq('Finish one task you have delayed', 'medium', 'evening'),
     lq('Two focus sessions, no phone', 'hard', 'afternoon'),
-    lq('Deep work for 90 minutes', 'hard', 'morning'),
-    lq('Zero distractions for 2 hours', 'hard', 'afternoon'),
+    lq('Deep work', 'hard', 'morning', T(90, 'min', 5, 150)),
+    lq('Zero distractions', 'hard', 'afternoon', T(120, 'min', 10, 180)),
   ],
   DIS: [
     lq('Make your bed', 'easy', 'morning'),
@@ -126,7 +130,7 @@ export const QUEST_LIBRARY: Record<StatKey, readonly LibraryQuest[]> = {
     lq('Plan tomorrow tonight', 'medium', 'evening'),
     lq('Cold shower', 'medium', 'morning'),
     lq('Follow your full routine', 'medium', 'morning'),
-    lq('Phone off an hour before bed', 'hard', 'evening'),
+    lq('Phone off before bed', 'hard', 'evening', T(60, 'min', 15, 120)),
     lq('Skip one habit you want to quit', 'hard', 'afternoon'),
     lq('Finish everything on your list', 'hard', 'evening'),
   ],
@@ -134,11 +138,11 @@ export const QUEST_LIBRARY: Record<StatKey, readonly LibraryQuest[]> = {
     lq('Write one line in a journal', 'easy', 'evening'),
     lq('Take 5 deep breaths', 'easy', 'morning'),
     lq('Note one thing you are grateful for', 'easy', 'evening'),
-    lq('Meditate for 10 minutes', 'medium', 'morning'),
-    lq('Journal three lines', 'medium', 'evening'),
+    lq('Meditate', 'medium', 'morning', T(10, 'min', 1, 25)),
+    lq('Journal', 'medium', 'evening', T(3, 'lines', 1, 6)),
     lq('Review your day', 'medium', 'evening'),
-    lq('Meditate for 20 minutes', 'hard', 'morning'),
-    lq('Reflect for 15 minutes', 'hard', 'evening'),
+    lq('Long meditation', 'hard', 'morning', T(20, 'min', 5, 40)),
+    lq('Reflect', 'hard', 'evening', T(15, 'min', 5, 30)),
     lq('Plan your week and your goals', 'hard', 'afternoon'),
   ],
 };
@@ -183,7 +187,14 @@ export function buildRoadmap(scores: StatScores, questCount: number, times: read
     const pick = alternatives(slot.stat, difficulty).find((x) => !used.has(x.name))!;
     used.add(pick.name);
     const timeOfDay = times.length === 0 || times.includes(pick.timeOfDay) ? pick.timeOfDay : times[t++ % times.length]!;
-    return { name: pick.name, stat: slot.stat, difficulty, timeOfDay, activeFromDay: RAMP_UNLOCK_DAY[difficulty] };
+    return {
+      name: pick.name,
+      stat: slot.stat,
+      difficulty,
+      timeOfDay,
+      activeFromDay: RAMP_UNLOCK_DAY[difficulty],
+      ...(pick.target ? { target: pick.target } : {}),
+    };
   });
   return { bossStat: boss, habits };
 }

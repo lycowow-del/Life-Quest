@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import type { MouseEvent } from 'react';
-import type { Habit } from '@la66/core';
+import { daysToNextLevel, questLabel, targetLevel, type Habit } from '@la66/core';
 import { STAT_META } from '../lib/theme';
 import { StatEmblem } from './StatEmblem';
 
@@ -29,7 +29,7 @@ export function QuestRow({ habit, done, xp, onComplete }: Props) {
       type="button"
       disabled={done}
       aria-pressed={done}
-      aria-label={`${habit.name}, ${done ? `completed, earned ${xp} XP` : `worth about ${xp} XP`}`}
+      aria-label={`${questLabel(habit)}, ${done ? `completed, earned ${xp} XP` : `worth about ${xp} XP`}`}
       whileTap={done ? undefined : { scale: 0.97 }}
       onClick={click}
       className={`glass flex w-full items-center gap-3 p-3 text-left transition-colors ${
@@ -49,11 +49,21 @@ export function QuestRow({ habit, done, xp, onComplete }: Props) {
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block truncate font-medium ${done ? 'text-slate-400 line-through' : ''}`}>{habit.name}</span>
+        <span className={`block truncate font-medium ${done ? 'text-slate-400 line-through' : ''}`}>{questLabel(habit)}</span>
         <span className="mt-0.5 flex items-center gap-1 text-xs" style={{ color: meta.color }}>
           <StatEmblem stat={habit.stat} size={18} />
           {meta.label}
         </span>
+        {habit.target && (
+          <span className="block text-[11px] text-slate-500">
+            Level {targetLevel(habit.target) + 1}
+            {habit.target.frozen
+              ? ' · growth paused'
+              : daysToNextLevel(habit.target) === null
+                ? ' · max level'
+                : ` · +25% after ${daysToNextLevel(habit.target)} more ${daysToNextLevel(habit.target) === 1 ? 'day' : 'days'}`}
+          </span>
+        )}
       </span>
       <span className="text-right">
         <span className={`block text-lg font-bold tabular-nums ${done ? 'text-arc-emerald' : ''}`}>+{xp}</span>

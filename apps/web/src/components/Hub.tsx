@@ -83,6 +83,8 @@ export function Hub({ state }: { state: GameState }) {
     let next: ToastData | null = null;
     if (card) next = { id, title: 'Skill card unlocked', sub: `Day ${card.day} · ${card.rarity}`, color: '#A8E6FF' };
     else if (r.leveledUp) next = { id, title: `Level ${r.newLevel}`, sub: 'Level up', color: '#FFB3E6' };
+    else if (r.questLevelUp)
+      next = { id, title: 'Quest level up', sub: `${r.questLevelUp.name} is now ${r.questLevelUp.label}`, color: '#B8F5C8' };
 
     if (r.rankedUp) {
       pending.current = next; // shown after the promotion scene

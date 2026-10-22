@@ -1,6 +1,16 @@
 # Life Quest handoff
 
-## Current version: 0.5.0 (S5). See docs/CHANGELOG.md for the history.
+## Current version: 0.5.5 (progressive quests, built after S5). See docs/CHANGELOG.md for the history.
+
+## 0.5.5 changes (progressive quests)
+- `Habit.target` (`QuestTarget`): base amount, unit, rounding step, optional max, `completions`, `frozen`. Old saves load fine (the field is optional and validated when present).
+- `packages/core/src/progression.ts`: level = min(maxLevel, floor(completions / 5)); amount = base x 1.25^level rounded; XP scale = 1.25^level; max level 3 (about 1.95x) or lower if the quest's own `max` is hit. `questLabel`, `formatAmount`, `daysToNextLevel`, `customTarget`, `setProgressionFrozen`.
+- `completeQuest` pays XP at the level held before the completion, increments `completions` (unless frozen), and returns `questLevelUp` when a level is gained. `questXp` takes a fifth argument, the target scale.
+- Library quests in `onboarding.ts` now carry targets where measurable (names no longer contain amounts).
+- UI: `QuestRow` shows the label and next-level hint; `TargetFields` in both add forms; Settings "Your quests" (growth switch, Remove); Hub toast "Quest level up".
+- Pacing check (66 perfect days, default quiz plan): 5 quests end at about 24,850 XP (Gold II) with growth, versus 14,650 (Silver II) without it; 3 quests reach Silver I and 8 quests reach Platinum I. No change to the rank curve was needed.
+- Tests: 89 core tests plus 6 pixel tests (95 in total).
+
 
 ## S5 changes (offline, updates, install, reminders)
 - `vite.config.ts`: `registerType: 'prompt'`, `workbox.importScripts: ['sw-extras.js']`, and build info (`__APP_VERSION__`, `__BUILD_SHA__` from GITHUB_SHA, `__BUILD_DATE__`).
@@ -18,7 +28,7 @@
 - No quiz retake, no skill card collection screen, no pet yet. Dev "Skip to next day" must be removed before v1.0.
 
 ## Next: S6 (Focus timer and journal)
-Pomodoro Focus Forge that awards FOC XP, mood tap and journal that awards WIS XP, ambient audio cues.
+Pomodoro Focus Forge that awards FOC XP (session length can read the current target of the player's focus quest), mood tap and journal that awards WIS XP, ambient audio cues.
 
 ## S4.5 changes (rank ladder and promotion scenes)
 - **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.

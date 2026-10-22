@@ -19,6 +19,25 @@ export type Rarity = 'common' | 'rare' | 'epic' | 'mythic';
 export type MilestoneDay = 7 | 21 | 30 | 66;
 export type StatXp = Record<StatKey, number>;
 
+export type TargetUnit = 'min' | 'pages' | 'steps' | 'reps' | 'lines';
+
+/** Starting amount for a measurable quest, e.g. 60 min. */
+export interface QuestTargetInput {
+  base: number;
+  unit: TargetUnit;
+  /** Amounts are rounded to a multiple of this (5 for minutes, 500 for steps). */
+  round: number;
+  /** Largest amount the quest may grow to. */
+  max?: number;
+}
+
+export interface QuestTarget extends QuestTargetInput {
+  /** Completed days on this quest. Every 5 raise the target by 25%. */
+  completions: number;
+  /** When true the target stays where it is. */
+  frozen?: boolean;
+}
+
 /** A recurring habit definition, shown to the player as a daily quest. */
 export interface Habit {
   id: string;
@@ -28,6 +47,8 @@ export interface Habit {
   timeOfDay: TimeOfDay;
   createdOnDay: number;
   archived: boolean;
+  /** Present on measurable quests, which grow as they are completed. */
+  target?: QuestTarget;
 }
 
 /** One completed quest on one day (the XP receipt). */
@@ -40,6 +61,8 @@ export interface Quest {
   balancedBonus: boolean;
   /** True when boss week doubled this completion. */
   boss?: boolean;
+  /** XP multiplier from the quest's target level (1.25 per level). Omitted when 1. */
+  scale?: number;
 }
 
 export interface DayLog {

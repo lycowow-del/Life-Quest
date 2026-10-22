@@ -26,12 +26,14 @@ export const questXp = (
   streakDays: number,
   balancedDay: boolean,
   bossMultiplier = 1,
+  targetScale = 1,
 ): number =>
   Math.round(
     XP_VALUES[difficulty] *
       consistencyMultiplier(streakDays) *
       (balancedDay ? BALANCED_DAY_BONUS : 1) *
-      bossMultiplier,
+      bossMultiplier *
+      targetScale,
   );
 
 export const xpForLevel = (level: number): number => LEVEL_XP_BASE * (level - 1) ** 2;

@@ -10,6 +10,7 @@ import {
   exportSave,
   parseSave,
   setMode as setModeInState,
+  setProgressionFrozen,
   syncToDate,
   toDateKey,
   type CompleteResult,
@@ -17,6 +18,7 @@ import {
   type GameState,
   type Mode,
   type OnboardingPlan,
+  type QuestTargetInput,
   type StatKey,
   type TimeOfDay,
 } from '@la66/core';
@@ -37,6 +39,7 @@ export interface NewHabit {
   stat: StatKey;
   difficulty: Difficulty;
   timeOfDay: TimeOfDay;
+  target?: QuestTargetInput;
 }
 
 interface GameStore {
@@ -51,6 +54,7 @@ interface GameStore {
   addHabit: (input: NewHabit) => void;
   addHabits: (inputs: readonly NewHabit[]) => void;
   archiveHabit: (id: string) => void;
+  toggleGrowth: (id: string) => void;
   setMode: (mode: Mode) => void;
   syncDate: () => void;
   devSkipDay: () => void;
@@ -118,6 +122,11 @@ export const useGame = create<GameStore>()((set, get) => {
     addHabit: (input) => update((s) => addHabitToState(s, input)),
     addHabits: (inputs) => update((s) => inputs.reduce(addHabitToState, s)),
     archiveHabit: (id) => update((s) => archiveHabitInState(s, id)),
+    toggleGrowth: (id) =>
+      update((s) => {
+        const h = s.habits.find((x) => x.id === id);
+        return h?.target ? setProgressionFrozen(s, id, !h.target.frozen) : s;
+      }),
     setMode: (mode) => update((s) => setModeInState(s, mode)),
 
     syncDate() {

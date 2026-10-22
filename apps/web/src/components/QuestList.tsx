@@ -5,6 +5,7 @@ import {
   groupByTimeOfDay,
   penaltyAtRisk,
   questXp,
+  targetScale,
   todayProgress,
   upcomingUnlocks,
   type GameState,
@@ -87,7 +88,7 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
                 key={h.id}
                 habit={h}
                 done={earned.has(h.id)}
-                xp={earned.get(h.id) ?? questXp(h.difficulty, projectedStreak, false)}
+                xp={earned.get(h.id) ?? questXp(h.difficulty, projectedStreak, false, boss.active && boss.stat === h.stat ? boss.multiplier : 1, h.target ? targetScale(h.target) : 1)}
                 onComplete={onComplete}
               />
             ))}

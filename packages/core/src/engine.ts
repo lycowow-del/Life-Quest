@@ -22,12 +22,14 @@ import type {
   Milestone,
   Mode,
   Quest,
+  QuestTargetInput,
   RankInfo,
   StatKey,
   StatXp,
   TimeOfDay,
   UserProfile,
 } from './types';
+import { formatAmount, targetAmount, targetLevel, targetScale } from './progression';
 import {
   archetype,
   consistencyMultiplier,
@@ -94,7 +96,7 @@ export function createInitialState(
 
 export function addHabit(
   state: GameState,
-  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string; activeFromDay?: number },
+  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string; activeFromDay?: number; target?: QuestTargetInput },
 ): GameState {
   const habit: Habit = {
     id: input.id ?? `h${state.habits.length + 1}`,
@@ -104,6 +106,7 @@ export function addHabit(
     timeOfDay: input.timeOfDay,
     createdOnDay: input.activeFromDay ?? state.profile.dayNumber,
     archived: false,
+    ...(input.target ? { target: { ...input.target, completions: 0 } } : {}),
   };
   return { ...state, habits: [...state.habits, habit] };
 }
@@ -133,6 +136,8 @@ export interface CompleteResult {
   tierUp: boolean;
   newRank: RankInfo;
   newMilestones: Milestone[];
+  /** Set when this completion raised a measurable quest to its next level. */
+  questLevelUp: { habitId: string; name: string; label: string; level: number } | null;
 }
 
 export function completeQuest(state: GameState, habitId: string): CompleteResult {
@@ -150,6 +155,7 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     tierUp: false,
     newRank: rankInfo(p.totalXp),
     newMilestones: [],
+    questLevelUp: null,
   });
 
   const habit = state.habits.find((h) => h.id === habitId && !h.archived && h.createdOnDay <= p.dayNumber);
@@ -163,7 +169,17 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
   const stats = new Set<StatKey>([...log.completions.map((c) => c.stat), habit.stat]);
   const balanced = stats.size >= BALANCED_DAY_MIN_STATS;
   const boss = isBossWeek(p) && p.bossStat === habit.stat;
-  const xp = questXp(habit.difficulty, streak, balanced, boss ? BOSS_XP_MULT : 1);
+  const scale = habit.target ? targetScale(habit.target) : 1;
+  const xp = questXp(habit.difficulty, streak, balanced, boss ? BOSS_XP_MULT : 1, scale);
+  let updatedHabit = habit;
+  let questLevelUp: CompleteResult['questLevelUp'] = null;
+  if (habit.target && !habit.target.frozen) {
+    const t = { ...habit.target, completions: habit.target.completions + 1 };
+    updatedHabit = { ...habit, target: t };
+    if (targetLevel(t) > targetLevel(habit.target)) {
+      questLevelUp = { habitId, name: habit.name, label: formatAmount(targetAmount(t), t.unit), level: targetLevel(t) };
+    }
+  }
   const receipt: Quest = {
     habitId,
     day,
@@ -172,10 +188,12 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     multiplier: consistencyMultiplier(streak),
     balancedBonus: balanced,
     boss,
+    ...(scale !== 1 ? { scale } : {}),
   };
 
   const next: GameState = {
     ...state,
+    habits: state.habits.map((h) => (h.id === habitId ? updatedHabit : h)),
     profile: {
       ...p,
       totalXp: p.totalXp + xp,
@@ -204,6 +222,7 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
     tierUp: newRank.tierIndex > oldRank.tierIndex,
     newRank,
     newMilestones: unlocked,
+    questLevelUp,
   };
 }
 

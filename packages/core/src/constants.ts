@@ -89,3 +89,9 @@ export const QUEST_COUNT_DEFAULT = 5;
 /** Quiz stat score is 0-9 (three questions, 0-3 each). It maps to a starting stat level 0-4. */
 export const QUIZ_MAX_STAT_SCORE = 9;
 export const START_STAT_MAX_LEVEL = 4;
+
+// Progressive quests: a measurable quest's target grows 25% every 5 completed days.
+export const PROGRESSION_DAYS = 5;
+export const PROGRESSION_GROWTH = 1.25;
+/** Level 3 is about 1.95x the starting target. */
+export const PROGRESSION_MAX_LEVEL = 3;

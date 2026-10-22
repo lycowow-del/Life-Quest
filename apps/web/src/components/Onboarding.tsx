@@ -15,6 +15,8 @@ import {
   alternatives,
   archetype,
   buildRoadmap,
+  customTarget,
+  formatAmount,
   phaseSummary,
   scoreQuiz,
   startingStatXp,
@@ -23,12 +25,14 @@ import {
   type Difficulty,
   type PlannedHabit,
   type StatKey,
+  type TargetUnit,
   type TimeOfDay,
 } from '@la66/core';
 import { STAT_META, TIME_LABEL } from '../lib/theme';
 import { useGame } from '../store/gameStore';
 import { Choice } from './AddQuestSheet';
 import { StatEmblem } from './StatEmblem';
+import { TargetFields } from './TargetFields';
 
 type Phase = 'name' | 'quiz' | 'setup' | 'review';
 const TIMES: TimeOfDay[] = ['morning', 'afternoon', 'evening'];
@@ -77,6 +81,8 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
   const [cStat, setCStat] = useState<StatKey>('DIS');
   const [cDiff, setCDiff] = useState<Difficulty>('medium');
   const [cTime, setCTime] = useState<TimeOfDay>('morning');
+  const [cAmount, setCAmount] = useState('');
+  const [cUnit, setCUnit] = useState<TargetUnit>('min');
 
   const scores = scoreQuiz(answers);
   const boss = weakestStat(scores);
@@ -210,8 +216,10 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
   const addOwn = () => {
     const n = cName.trim();
     if (!n) return;
-    setHabits((hs) => [...hs, { name: n, stat: cStat, difficulty: cDiff, timeOfDay: cTime, activeFromDay: 1 }]);
+    const target = customTarget(Number(cAmount), cUnit);
+    setHabits((hs) => [...hs, { name: n, stat: cStat, difficulty: cDiff, timeOfDay: cTime, activeFromDay: 1, ...(target ? { target } : {}) }]);
     setCName('');
+    setCAmount('');
     setAdding(false);
   };
   const bossQuests = habits.filter((h) => h.stat === boss).length;
@@ -257,7 +265,7 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
             <div key={`${h.name}-${i}`} className="glass flex items-center gap-3 p-3">
               <StatEmblem stat={h.stat} size={28} />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{h.name}</p>
+                <p className="truncate font-medium">{h.target ? `${h.name} · ${formatAmount(h.target.base, h.target.unit)}` : h.name}</p>
                 <p className="text-xs text-slate-400">
                   {TIME_LABEL[h.timeOfDay]} · {h.difficulty} +{XP_VALUES[h.difficulty]} · day {h.activeFromDay}
                 </p>
@@ -285,6 +293,7 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
             <Choice label="Stat" value={cStat} onChange={setCStat} options={STAT_KEYS.map((k) => ({ value: k, label: STAT_META[k].label, color: STAT_META[k].color }))} />
             <Choice label="Difficulty" value={cDiff} onChange={setCDiff} options={(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => ({ value: d, label: `${d} +${XP_VALUES[d]}` }))} />
             <Choice label="When" value={cTime} onChange={setCTime} options={TIMES.map((t) => ({ value: t, label: TIME_LABEL[t] }))} />
+            <TargetFields amount={cAmount} unit={cUnit} onAmount={setCAmount} onUnit={setCUnit} />
             <p className="text-xs text-slate-400">Your own quests are active from day 1.</p>
             <button type="button" className={primary} disabled={!cName.trim()} onClick={addOwn}>
               Add quest
