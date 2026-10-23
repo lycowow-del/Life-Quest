@@ -1,6 +1,17 @@
 # Life Quest handoff
 
-## Current version: 0.5.5 (progressive quests, built after S5). See docs/CHANGELOG.md for the history.
+## Current version: 0.6.0 (S6). See docs/CHANGELOG.md for the history.
+
+## 0.6.0 changes (focus, mood, journal)
+- Core: `activity.ts` (`completeFocusSession`, `logMood`, `saveJournalEntry`, `focusQuest`, `suggestedFocusMinutes`, `todayFocus`, `todayJournal`) and `reward.ts` (`grantXp` returns a `Reward` with rank and level changes). `GameState` gains optional `journal` and `focus` records (validated in `serialize.ts`). Constants: `FOCUS_XP_PER_MIN` 1.2, `FOCUS_MIN_MINUTES` 10, `FOCUS_DAILY_XP_CAP` 120, `MOOD_XP` 5, `JOURNAL_XP` 15.
+- Web: `store/focusTimer.ts` (clock-based timer, runs across tabs), `lib/focusAudio.ts` (ambient and chimes), `lib/photos.ts` (journal photos in their own IndexedDB `life-quest-photos`, shrunk to 1600 px JPEG), `components/{BottomNav,FocusScreen,JournalScreen,PhotoThumb}.tsx`. `Hub.tsx` owns the tabs, the timer ticker, ambient control and reward handling.
+- Reset all data also clears photos. Settings notes that photos are not in the save file.
+- Dependency check run before packaging: every imported library is in package.json (this caught nothing new; the S5 failure was a missing `workbox-window`, now fixed).
+
+## Limits
+- Timer does not survive closing the app. Photos are not in export and would be lost if browser data is cleared.
+- The paper journal is photos only; there is no handwriting-to-text.
+
 
 ## 0.5.5 changes (progressive quests)
 - `Habit.target` (`QuestTarget`): base amount, unit, rounding step, optional max, `completions`, `frozen`. Old saves load fine (the field is optional and validated when present).
@@ -27,8 +38,8 @@
 - The service worker and install flow could not be run in the build environment; verify on a device.
 - No quiz retake, no skill card collection screen, no pet yet. Dev "Skip to next day" must be removed before v1.0.
 
-## Next: S6 (Focus timer and journal)
-Pomodoro Focus Forge that awards FOC XP (session length can read the current target of the player's focus quest), mood tap and journal that awards WIS XP, ambient audio cues.
+## Next: S6.5 (routine quests and quiz retake)
+Quests due every N days or on set weekdays (rest days must not break streaks; settle missed-day rules first), and retaking the quiz from Settings. Then S7 Hard Mode polish, S8 heatmap and radar, S8.5 pet, S9 skill cards and achievements, S10 launch.
 
 ## S4.5 changes (rank ladder and promotion scenes)
 - **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.

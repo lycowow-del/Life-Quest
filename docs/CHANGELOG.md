@@ -2,7 +2,18 @@
 
 Version numbers follow the build sessions. The version shows in the app under Settings, with the build commit and date.
 
-## 0.5.5: progressive quests (current)
+## 0.6.0: S6 focus, mood and journal (current)
+- Bottom tab bar: Quests, Focus, Journal.
+- Focus Forge: a timer ring with 15, 25, 45 and 60 minute presets plus your focus quest's current target. Sessions of 10 minutes or more earn 1.2 Focus XP a minute (up to 120 base XP a day, scaled by your streak multiplier). It keeps running while you use other tabs, and finishing it plays a chime and vibrates.
+- After a session you can complete your focus quest in one tap, or start a 5 minute break.
+- Ambient sound (soft brown noise) during focus sessions; follows the Sound effects switch.
+- Mood tap (5 faces): the first mood each day earns 5 Wisdom XP.
+- Journal: a typed entry of 20 or more characters earns 15 Wisdom XP once a day.
+- Paper journal: take a photo of your page; it is shrunk and saved on the device, counts like a written entry (15 Wisdom XP), and shows in past entries. Photos are not part of the save file.
+- Rewards from the timer and journal can trigger rank promotions and level-up banners.
+- Library fix: added the missing `workbox-window` dependency that broke the S5 build.
+
+## 0.5.5: progressive quests
 - Measurable quests (minutes, pages, steps, reps, lines) now grow: +25% every 5 completed days. Missed days only pause the count.
 - Targets round to tidy numbers and are capped near 2x (for example 60 min becomes 75, 95, then 115). Each quest can also have its own maximum.
 - XP grows with the target (1.25x, 1.56x, 1.95x). A level-up shows a banner, and each quest shows "+25% after N more days".

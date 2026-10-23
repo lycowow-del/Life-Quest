@@ -95,3 +95,13 @@ export const PROGRESSION_DAYS = 5;
 export const PROGRESSION_GROWTH = 1.25;
 /** Level 3 is about 1.95x the starting target. */
 export const PROGRESSION_MAX_LEVEL = 3;
+
+// Focus timer and journal rewards. Base XP is multiplied by the streak multiplier.
+export const FOCUS_XP_PER_MIN = 1.2; // a 25-minute session is 30 base XP
+export const FOCUS_MIN_MINUTES = 10; // shorter sessions earn nothing
+export const FOCUS_DAILY_XP_CAP = 120; // base XP per day from the timer
+export const MOOD_XP = 5; // once a day
+export const JOURNAL_XP = 15; // once a day, for an entry or a photo of a paper page
+export const JOURNAL_MIN_CHARS = 20;
+export const JOURNAL_MAX_CHARS = 5000;
+export const JOURNAL_MAX_PHOTOS = 6;

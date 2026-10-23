@@ -171,6 +171,8 @@ export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose
           </ImportButton>
         </div>
 
+        <p className="text-xs text-slate-400">Journal photos stay on this device. They are not included in the save file.</p>
+
         <div className="space-y-2 rounded-xl border border-slate-700 p-3">
           <p className="text-xs text-slate-400">Developer tools (removed before v1.0)</p>
           <button type="button" className={`${ghost} w-full`} onClick={g.devSkipDay}>

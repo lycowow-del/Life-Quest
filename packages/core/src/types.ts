@@ -106,11 +106,32 @@ export interface UserProfile {
   bossChestClaimedCycle?: number;
 }
 
+export type Mood = 1 | 2 | 3 | 4 | 5;
+
+export interface JournalEntry {
+  day: number;
+  mood?: Mood;
+  text?: string;
+  /** Ids of photos of paper journal pages. The images live in device storage, not in the save file. */
+  photoIds?: string[];
+  moodPaid?: boolean;
+  journalPaid?: boolean;
+}
+
+/** Focus timer totals for one day. baseXp is the XP before the streak multiplier, for the daily cap. */
+export interface FocusDay {
+  sessions: number;
+  minutes: number;
+  baseXp: number;
+}
+
 export interface GameState {
   profile: UserProfile;
   habits: Habit[];
   logs: Record<number, DayLog>;
   milestones: Milestone[];
+  journal?: Record<number, JournalEntry>;
+  focus?: Record<number, FocusDay>;
 }
 
 export interface RankInfo {

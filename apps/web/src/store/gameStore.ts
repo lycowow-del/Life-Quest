@@ -4,11 +4,14 @@ import {
   addDaysToKey,
   addHabit as addHabitToState,
   archiveHabit as archiveHabitInState,
+  completeFocusSession,
   completeQuest,
   createGameFromPlan,
   createInitialState,
   exportSave,
+  logMood,
   parseSave,
+  saveJournalEntry,
   setMode as setModeInState,
   setProgressionFrozen,
   syncToDate,
@@ -17,11 +20,15 @@ import {
   type Difficulty,
   type GameState,
   type Mode,
+  type Mood,
   type OnboardingPlan,
   type QuestTargetInput,
+  type Reward,
   type StatKey,
   type TimeOfDay,
 } from '@la66/core';
+
+import { clearPhotos } from '../lib/photos';
 
 const db = localforage.createInstance({ name: 'life-arc-66', storeName: 'game' });
 const KEY = 'save';
@@ -55,6 +62,9 @@ interface GameStore {
   addHabits: (inputs: readonly NewHabit[]) => void;
   archiveHabit: (id: string) => void;
   toggleGrowth: (id: string) => void;
+  completeFocus: (minutes: number) => Reward | null;
+  setMood: (mood: Mood) => Reward | null;
+  saveJournal: (text: string, photoIds: string[]) => Reward | null;
   setMode: (mode: Mode) => void;
   syncDate: () => void;
   devSkipDay: () => void;
@@ -127,6 +137,30 @@ export const useGame = create<GameStore>()((set, get) => {
         const h = s.habits.find((x) => x.id === id);
         return h?.target ? setProgressionFrozen(s, id, !h.target.frozen) : s;
       }),
+
+    completeFocus(minutes) {
+      const s = get().state;
+      if (!s) return null;
+      const r = completeFocusSession(s, minutes);
+      commit(r.state);
+      return r.reward;
+    },
+
+    setMood(mood) {
+      const s = get().state;
+      if (!s) return null;
+      const r = logMood(s, mood);
+      commit(r.state);
+      return r.reward;
+    },
+
+    saveJournal(text, photoIds) {
+      const s = get().state;
+      if (!s) return null;
+      const r = saveJournalEntry(s, text, photoIds);
+      commit(r.state);
+      return r.reward;
+    },
     setMode: (mode) => update((s) => setModeInState(s, mode)),
 
     syncDate() {
@@ -160,6 +194,7 @@ export const useGame = create<GameStore>()((set, get) => {
     async reset() {
       await writes;
       await db.removeItem(KEY);
+      await clearPhotos();
       set({ state: null, startDateKey: null, loadError: null });
     },
   };

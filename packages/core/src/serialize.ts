@@ -1,4 +1,4 @@
-import { MILESTONE_DAYS, STAT_KEYS } from './constants';
+import { JOURNAL_MAX_CHARS, JOURNAL_MAX_PHOTOS, MILESTONE_DAYS, STAT_KEYS } from './constants';
 import { isDateKey } from './dates';
 import type { GameState } from './types';
 
@@ -75,6 +75,22 @@ function validateState(s: unknown): string | null {
     if (!isObj(m) || !isStr(m.id) || !oneOf(m.day, MILESTONE_DAYS) || !isNum(m.cycle) ||
       !oneOf(m.rarity, ['common', 'rare', 'epic', 'mythic']) || !isNum(m.unlockedOnDay) ||
       !isStr(m.archetype) || !oneOf(m.topStat, STAT_KEYS)) return 'A skill card is invalid.';
+  }
+  if (s.journal !== undefined) {
+    if (!isObj(s.journal)) return 'Journal is invalid.';
+    for (const e of Object.values(s.journal)) {
+      if (!isObj(e) || !isNum(e.day) || (e.mood !== undefined && !oneOf(e.mood, [1, 2, 3, 4, 5])) ||
+        (e.text !== undefined && (!isStr(e.text) || e.text.length > JOURNAL_MAX_CHARS)) ||
+        (e.photoIds !== undefined && (!Array.isArray(e.photoIds) || e.photoIds.length > JOURNAL_MAX_PHOTOS || !e.photoIds.every(isStr))) ||
+        (e.moodPaid !== undefined && typeof e.moodPaid !== 'boolean') ||
+        (e.journalPaid !== undefined && typeof e.journalPaid !== 'boolean')) return 'A journal entry is invalid.';
+    }
+  }
+  if (s.focus !== undefined) {
+    if (!isObj(s.focus)) return 'Focus log is invalid.';
+    for (const f of Object.values(s.focus)) {
+      if (!isObj(f) || !isNum(f.sessions) || !isNum(f.minutes) || !isNum(f.baseXp) || f.sessions < 0 || f.minutes < 0 || f.baseXp < 0) return 'A focus day is invalid.';
+    }
   }
   return null;
 }

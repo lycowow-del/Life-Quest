@@ -27,7 +27,7 @@ export function PwaBanner() {
       role="status"
       aria-live="polite"
       className="fixed inset-x-0 bottom-0 z-[70] flex justify-center px-4"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
     >
       <div className="glass flex items-center gap-3 px-4 py-3 text-sm shadow-glow-cyan">
         {needRefresh ? (

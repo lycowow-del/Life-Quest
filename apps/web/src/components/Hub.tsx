@@ -10,18 +10,24 @@ import {
   type GameState,
   type Habit,
   type RankInfo,
+  type Reward,
 } from '@la66/core';
-import { contextFor, useReminders } from '../lib/useReminders';
+import { playChime, startAmbient, stopAmbient } from '../lib/focusAudio';
 import { STAT_META } from '../lib/theme';
+import { contextFor, useReminders } from '../lib/useReminders';
+import { useFocusTimer } from '../store/focusTimer';
 import { useGame } from '../store/gameStore';
 import { useSettings } from '../store/settingsStore';
 import { AddQuestSheet } from './AddQuestSheet';
+import { BottomNav, type Tab } from './BottomNav';
 import { Burst } from './Burst';
+import { FocusScreen } from './FocusScreen';
+import { JournalScreen } from './JournalScreen';
 import { PlayerHeader } from './PlayerHeader';
 import { PromotionScene } from './PromotionScene';
 import { QuestList } from './QuestList';
-import { ReminderBanner } from './ReminderBanner';
 import type { Origin } from './QuestRow';
+import { ReminderBanner } from './ReminderBanner';
 import { SettingsSheet } from './SettingsSheet';
 import { StatStrip } from './StatStrip';
 import { Toast, type ToastData } from './Toast';
@@ -35,18 +41,19 @@ interface BurstItem extends Origin {
 export function Hub({ state }: { state: GameState }) {
   const complete = useGame((s) => s.complete);
   const addHabits = useGame((s) => s.addHabits);
+  const [tab, setTab] = useState<Tab>('quests');
   const [bursts, setBursts] = useState<BurstItem[]>([]);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [promo, setPromo] = useState<{ from: RankInfo; to: RankInfo } | null>(null);
   const [sheet, setSheet] = useState<'add' | 'settings' | null>(null);
   const seq = useRef(0);
+  const pending = useRef<ToastData | null>(null);
   const reminders = useSettings((s) => s.reminders);
   const vibrate = useSettings((s) => s.vibrate);
   const [dismissedDay, setDismissedDay] = useState('');
   const [, setTick] = useState(0);
   useReminders(state);
 
-  // Re-evaluate the reminder banner as the clock moves.
   useEffect(() => {
     const id = window.setInterval(() => setTick((t) => t + 1), 60_000);
     return () => window.clearInterval(id);
@@ -54,7 +61,6 @@ export function Hub({ state }: { state: GameState }) {
   const now = new Date();
   const banner = reminderBanner(reminders, contextFor(state, now, {}));
   const todayKey = toDateKey(now);
-  const pending = useRef<ToastData | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -68,6 +74,22 @@ export function Hub({ state }: { state: GameState }) {
     if (pending.current) {
       setToast(pending.current);
       pending.current = null;
+    }
+  }, []);
+
+  /** XP from the timer or the journal: a promotion scene if the rank changed, otherwise a banner. */
+  const showReward = useCallback((rw: Reward) => {
+    const next: ToastData = {
+      id: ++seq.current,
+      title: `+${rw.xp} ${STAT_META[rw.stat].label} XP`,
+      sub: rw.leveledUp ? `Level ${rw.newLevel}` : rw.to.label,
+      color: STAT_META[rw.stat].color,
+    };
+    if (rw.rankedUp) {
+      pending.current = next;
+      setPromo({ from: rw.from, to: rw.to });
+    } else {
+      setToast(next);
     }
   }, []);
 
@@ -87,12 +109,48 @@ export function Hub({ state }: { state: GameState }) {
       next = { id, title: 'Quest level up', sub: `${r.questLevelUp.name} is now ${r.questLevelUp.label}`, color: '#B8F5C8' };
 
     if (r.rankedUp) {
-      pending.current = next; // shown after the promotion scene
+      pending.current = next;
       setPromo({ from: before, to: r.newRank });
     } else if (next) {
       setToast(next);
     }
   };
+
+  // The focus timer keeps running while you look at other tabs, so it is driven from here.
+  const onTimerFinished = useCallback(() => {
+    const t = useFocusTimer.getState();
+    playChime('end');
+    if (useSettings.getState().vibrate) navigator.vibrate?.([200, 100, 200]);
+    if (t.mode === 'focus') {
+      const rw = useGame.getState().completeFocus(t.sessionMinutes);
+      t.setResult({ minutes: t.sessionMinutes, xp: rw?.xp ?? 0 });
+      if (rw) showReward(rw);
+    }
+  }, [showReward]);
+
+  useEffect(() => {
+    const run = (): void => {
+      if (useFocusTimer.getState().tick()) onTimerFinished();
+    };
+    const id = window.setInterval(run, 500);
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible') run();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [onTimerFinished]);
+
+  const timerStatus = useFocusTimer((s) => s.status);
+  const timerMode = useFocusTimer((s) => s.mode);
+  const ambientOn = useFocusTimer((s) => s.ambient);
+  useEffect(() => {
+    if (timerStatus === 'running' && timerMode === 'focus' && ambientOn) startAmbient();
+    else stopAmbient();
+    return () => stopAmbient();
+  }, [timerStatus, timerMode, ambientOn]);
 
   const empty = activeHabits(state).length === 0;
 
@@ -114,22 +172,26 @@ export function Hub({ state }: { state: GameState }) {
       </div>
 
       <main className="space-y-4">
-        {banner && dismissedDay !== todayKey && (
-          <ReminderBanner text={banner.text} onClose={() => setDismissedDay(todayKey)} />
+        {banner && dismissedDay !== todayKey && <ReminderBanner text={banner.text} onClose={() => setDismissedDay(todayKey)} />}
+        {tab === 'quests' && (
+          <>
+            <PlayerHeader state={state} />
+            <StatStrip state={state} />
+            {empty ? (
+              <section className="glass space-y-3 p-6 text-center">
+                <p className="text-lg font-bold">No quests yet</p>
+                <p className="text-sm text-slate-400">Load a starter pack or write your own.</p>
+                <button type="button" onClick={() => addHabits(STARTER_HABITS)} className="w-full rounded-xl bg-arc-violet py-3 font-bold text-obsidian shadow-glow-violet">
+                  Add starter quests
+                </button>
+              </section>
+            ) : (
+              <QuestList state={state} onComplete={onComplete} />
+            )}
+          </>
         )}
-        <PlayerHeader state={state} />
-        <StatStrip state={state} />
-        {empty ? (
-          <section className="glass space-y-3 p-6 text-center">
-            <p className="text-lg font-bold">No quests yet</p>
-            <p className="text-sm text-slate-400">Load a starter pack or write your own.</p>
-            <button type="button" onClick={() => addHabits(STARTER_HABITS)} className="w-full rounded-xl bg-arc-violet py-3 font-bold text-obsidian shadow-glow-violet">
-              Add starter quests
-            </button>
-          </section>
-        ) : (
-          <QuestList state={state} onComplete={onComplete} />
-        )}
+        {tab === 'focus' && <FocusScreen state={state} onCompleteQuest={onComplete} />}
+        {tab === 'journal' && <JournalScreen key={state.profile.dayNumber} state={state} onReward={showReward} />}
       </main>
 
       <AnimatePresence>
@@ -139,6 +201,7 @@ export function Hub({ state }: { state: GameState }) {
       </AnimatePresence>
       <AnimatePresence>{promo && <PromotionScene key={promo.to.step} from={promo.from} to={promo.to} onDone={closePromo} />}</AnimatePresence>
       <Toast toast={toast} />
+      <BottomNav tab={tab} onTab={setTab} />
       <AddQuestSheet open={sheet === 'add'} onClose={() => setSheet(null)} />
       <SettingsSheet open={sheet === 'settings'} onClose={() => setSheet(null)} state={state} />
     </div>
