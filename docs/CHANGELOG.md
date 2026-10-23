@@ -2,7 +2,16 @@
 
 Version numbers follow the build sessions. The version shows in the app under Settings, with the build commit and date.
 
-## 0.6.0: S6 focus, mood and journal (current)
+## 0.6.5: S6.5 routine quests and quiz retake (current)
+- Routine quests: a quest can repeat every N days or on set weekdays. Quests that are not due today are hidden; the quest list shows "Coming up" for the next ones.
+- A missed due day stays open for one extra day ("Due yesterday: last chance today"), then counts as missed. If the next day is also a due day there is no extra day.
+- Rest days: a day with quests but none due keeps your streak, is not counted as missed, and counts toward skill cards. The list shows a "Rest day" card.
+- Hard Mode penalties, the penalty preview, reminders and the boss chest all follow the schedule (the chest only needs the boss quests that were actually due).
+- Add-quest forms (in the app and in the quiz plan) have a "How often" picker. Settings shows each quest's schedule.
+- Retake the quiz from Settings: stat levels only go up, XP and rank stay, the boss stat is re-picked, and you can optionally replace your quests with a new plan (the ramp starts today).
+- Weekday schedules use the weekday of your first day, stored with the save.
+
+## 0.6.0: S6 focus, mood and journal
 - Bottom tab bar: Quests, Focus, Journal.
 - Focus Forge: a timer ring with 15, 25, 45 and 60 minute presets plus your focus quest's current target. Sessions of 10 minutes or more earn 1.2 Focus XP a minute (up to 120 base XP a day, scaled by your streak multiplier). It keeps running while you use other tabs, and finishing it plays a chime and vibrates.
 - After a session you can complete your focus quest in one tap, or start a 5 minute break.

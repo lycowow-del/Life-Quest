@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { questLabel, type GameState, type ReminderKind } from '@la66/core';
+import { describeSchedule, questLabel, type GameState, type ReminderKind } from '@la66/core';
 import { notificationsSupported, requestNotificationPermission, showNotification } from '../lib/notify';
 import { useInstall } from '../lib/pwa/useInstall';
 import { BUILD_DATE, BUILD_SHA, VERSION_LABEL } from '../lib/version';
@@ -31,7 +31,7 @@ const REMINDER_LABEL: Record<ReminderKind, { name: string; hint: string }> = {
   evening: { name: 'Evening Review', hint: 'Only if you still have quests left.' },
 };
 
-export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose: () => void; state: GameState }) {
+export function SettingsSheet({ open, onClose, state, onRetake }: { open: boolean; onClose: () => void; state: GameState; onRetake: () => void }) {
   const g = useGame();
   const settings = useSettings();
   const install = useInstall();
@@ -129,6 +129,7 @@ export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose
               <div key={h.id} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{questLabel(h)}</p>
+                  {h.schedule && <p className="text-xs text-slate-400">{describeSchedule(h.schedule)}</p>}
                   {h.createdOnDay > state.profile.dayNumber && <p className="text-xs text-slate-400">Unlocks on day {h.createdOnDay}</p>}
                 </div>
                 {h.target && <Switch on={!h.target.frozen} label={`Grow ${h.name}`} onChange={() => g.toggleGrowth(h.id)} />}
@@ -138,6 +139,14 @@ export function SettingsSheet({ open, onClose, state }: { open: boolean; onClose
               </div>
             ))}
           <p className="text-xs text-slate-400">The switch lets a measurable quest grow 25% every 5 completed days. Turn it off to keep the amount where it is.</p>
+        </section>
+
+        <section className="space-y-2" aria-label="Quiz">
+          <p className="font-bold">Quiz</p>
+          <p className="text-xs text-slate-400">Retake the habit quiz to update your stat levels and boss stat. Levels only go up, and your XP and rank stay as they are.</p>
+          <button type="button" className={`${ghost} w-full`} onClick={onRetake}>
+            Retake the quiz
+          </button>
         </section>
 
         <section className="space-y-2" aria-label="Install">

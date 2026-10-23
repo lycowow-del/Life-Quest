@@ -38,6 +38,14 @@ export interface QuestTarget extends QuestTargetInput {
   frozen?: boolean;
 }
 
+/** Routine quests are only due on some days. Weekdays use 0 = Sunday to 6 = Saturday. */
+export type Schedule =
+  | { kind: 'every'; n: number; anchor: number }
+  | { kind: 'weekdays'; days: number[] };
+export type ScheduleInput =
+  | { kind: 'every'; n: number; anchor?: number }
+  | { kind: 'weekdays'; days: number[] };
+
 /** A recurring habit definition, shown to the player as a daily quest. */
 export interface Habit {
   id: string;
@@ -49,6 +57,8 @@ export interface Habit {
   archived: boolean;
   /** Present on measurable quests, which grow as they are completed. */
   target?: QuestTarget;
+  /** Absent means the quest is due every day. */
+  schedule?: Schedule;
 }
 
 /** One completed quest on one day (the XP receipt). */
@@ -74,6 +84,8 @@ export interface DayLog {
   decayed: StatKey[];
   /** Boss chest XP paid out when this day closed. */
   chest?: number;
+  /** True when quests exist but none was due, so the streak was left alone. */
+  rest?: boolean;
   closed: boolean;
 }
 
@@ -104,6 +116,8 @@ export interface UserProfile {
   /** Weakest stat from the onboarding quiz. Its quests get 2x XP during boss week. */
   bossStat?: StatKey | null;
   bossChestClaimedCycle?: number;
+  /** Weekday (0 = Sunday) of game day 1, so weekday schedules can be worked out. */
+  startWeekday?: number;
 }
 
 export type Mood = 1 | 2 | 3 | 4 | 5;

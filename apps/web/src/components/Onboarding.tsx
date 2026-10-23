@@ -16,7 +16,9 @@ import {
   archetype,
   buildRoadmap,
   customTarget,
+  describeSchedule,
   formatAmount,
+  rankInfo,
   phaseSummary,
   scoreQuiz,
   startingStatXp,
@@ -25,12 +27,15 @@ import {
   type Difficulty,
   type PlannedHabit,
   type StatKey,
+  type StatXp,
   type TargetUnit,
   type TimeOfDay,
 } from '@la66/core';
 import { STAT_META, TIME_LABEL } from '../lib/theme';
 import { useGame } from '../store/gameStore';
 import { Choice } from './AddQuestSheet';
+import { EMPTY_DRAFT, draftToSchedule, type ScheduleDraft } from '../lib/scheduleDraft';
+import { ScheduleFields } from './ScheduleFields';
 import { StatEmblem } from './StatEmblem';
 import { TargetFields } from './TargetFields';
 
@@ -67,9 +72,22 @@ function Shell({ children, onBack, progress }: { children: ReactNode; onBack: ()
 
 const primary = 'w-full rounded-xl bg-arc-violet py-3 font-bold text-obsidian shadow-glow-violet disabled:opacity-40';
 
-export function Onboarding({ onBack }: { onBack: () => void }) {
+const mergeMax = (a: StatXp, b: StatXp): StatXp => ({
+  STR: Math.max(a.STR, b.STR),
+  INT: Math.max(a.INT, b.INT),
+  FOC: Math.max(a.FOC, b.FOC),
+  DIS: Math.max(a.DIS, b.DIS),
+  WIS: Math.max(a.WIS, b.WIS),
+});
+
+/** First-run character creation, or (mode "retake") a retaken quiz for an existing game. */
+export function Onboarding({ onBack, mode = 'new', onDone }: { onBack: () => void; mode?: 'new' | 'retake'; onDone?: () => void }) {
   const start = useGame((s) => s.startFromOnboarding);
-  const [phase, setPhase] = useState<Phase>('name');
+  const retake = useGame((s) => s.retakeQuiz);
+  const current = useGame((s) => s.state);
+  const [replace, setReplace] = useState(false);
+  const [cSched, setCSched] = useState<ScheduleDraft>(EMPTY_DRAFT);
+  const [phase, setPhase] = useState<Phase>(mode === 'retake' ? 'quiz' : 'name');
   const [name, setName] = useState('');
   const [qi, setQi] = useState(0);
   const [answers, setAnswers] = useState<(number | undefined)[]>(() => Array.from({ length: QUIZ_LENGTH }, () => undefined));
@@ -120,7 +138,7 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
       else setQi(qi + 1);
     };
     return (
-      <Shell onBack={() => (qi === 0 ? setPhase('name') : setQi(qi - 1))} progress={qi / QUIZ_LENGTH}>
+      <Shell onBack={() => (qi === 0 ? (mode === 'retake' ? onBack() : setPhase('name')) : setQi(qi - 1))} progress={qi / QUIZ_LENGTH}>
         <div className="space-y-5">
           <p className="flex items-center gap-2 text-sm" style={{ color: meta.color }}>
             <StatEmblem stat={question.stat} size={28} />
@@ -205,7 +223,8 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
   }
 
   // review
-  const xp = startingStatXp(scores);
+  const quizXp = startingStatXp(scores);
+  const xp = mode === 'retake' && current ? mergeMax(current.profile.statXp, quizXp) : quizXp;
   const swap = (i: number) => {
     const h = habits[i]!;
     const alts = alternatives(h.stat, h.difficulty);
@@ -217,9 +236,11 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
     const n = cName.trim();
     if (!n) return;
     const target = customTarget(Number(cAmount), cUnit);
-    setHabits((hs) => [...hs, { name: n, stat: cStat, difficulty: cDiff, timeOfDay: cTime, activeFromDay: 1, ...(target ? { target } : {}) }]);
+    const schedule = draftToSchedule(cSched);
+    setHabits((hs) => [...hs, { name: n, stat: cStat, difficulty: cDiff, timeOfDay: cTime, activeFromDay: 1, ...(target ? { target } : {}), ...(schedule ? { schedule } : {}) }]);
     setCName('');
     setCAmount('');
+    setCSched(EMPTY_DRAFT);
     setAdding(false);
   };
   const bossQuests = habits.filter((h) => h.stat === boss).length;
@@ -227,10 +248,10 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
   return (
     <Shell onBack={() => setPhase('setup')}>
       <div className="space-y-5">
-        <h1 className="text-3xl font-bold">Your starting build</h1>
+        <h1 className="text-3xl font-bold">{mode === 'retake' ? 'Update your build' : 'Your starting build'}</h1>
         <section className="glass p-4">
           <p className="mb-3 text-sm text-slate-300">
-            {name.trim() || 'Hunter'} · <span className="font-bold text-arc-violet">{archetype(xp)}</span> · rank Iron IV
+            {mode === 'retake' && current ? current.profile.name : name.trim() || 'Hunter'} · <span className="font-bold text-arc-violet">{archetype(xp)}</span> · rank {mode === 'retake' && current ? rankInfo(current.profile.totalXp).shortLabel : 'Iron IV'}
           </p>
           <div className="grid grid-cols-5 gap-2 text-center">
             {STAT_KEYS.map((k) => (
@@ -252,6 +273,19 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
           {bossQuests === 0 && <p className="mt-1 text-arc-crimson">You removed every {STAT_META[boss].label} quest, so boss week will have no chest.</p>}
         </section>
 
+        {mode === 'retake' && (
+          <section className="glass space-y-2 p-4 text-sm">
+            <p className="text-slate-300">Your stat levels can only go up, and your XP and rank stay as they are.</p>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+              Replace my quests with a new plan
+            </label>
+            {!replace && <p className="text-xs text-slate-400">Your current quests stay. Only your stat levels and boss stat update.</p>}
+          </section>
+        )}
+
+        {(mode === 'new' || replace) && (
+          <>
         <section className="space-y-1 text-sm text-slate-300">
           {phaseSummary(habits).map((p) => (
             <p key={p.day}>
@@ -267,7 +301,7 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{h.target ? `${h.name} · ${formatAmount(h.target.base, h.target.unit)}` : h.name}</p>
                 <p className="text-xs text-slate-400">
-                  {TIME_LABEL[h.timeOfDay]} · {h.difficulty} +{XP_VALUES[h.difficulty]} · day {h.activeFromDay}
+                  {TIME_LABEL[h.timeOfDay]} · {h.difficulty} +{XP_VALUES[h.difficulty]} · day {h.activeFromDay}{h.schedule ? ` · ${describeSchedule(h.schedule.kind === 'every' ? { ...h.schedule, anchor: h.schedule.anchor ?? 0 } : h.schedule)}` : ''}
                 </p>
               </div>
               <button type="button" aria-label={`Swap ${h.name}`} onClick={() => swap(i)} className="rounded-lg p-2 text-slate-300 active:bg-slate-800">
@@ -293,6 +327,7 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
             <Choice label="Stat" value={cStat} onChange={setCStat} options={STAT_KEYS.map((k) => ({ value: k, label: STAT_META[k].label, color: STAT_META[k].color }))} />
             <Choice label="Difficulty" value={cDiff} onChange={setCDiff} options={(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => ({ value: d, label: `${d} +${XP_VALUES[d]}` }))} />
             <Choice label="When" value={cTime} onChange={setCTime} options={TIMES.map((t) => ({ value: t, label: TIME_LABEL[t] }))} />
+            <ScheduleFields draft={cSched} onChange={setCSched} />
             <TargetFields amount={cAmount} unit={cUnit} onAmount={setCAmount} onUnit={setCUnit} />
             <p className="text-xs text-slate-400">Your own quests are active from day 1.</p>
             <button type="button" className={primary} disabled={!cName.trim()} onClick={addOwn}>
@@ -305,13 +340,23 @@ export function Onboarding({ onBack }: { onBack: () => void }) {
           </button>
         )}
 
+          </>
+        )}
+
         <button
           type="button"
           className={primary}
-          disabled={habits.length === 0}
-          onClick={() => start({ name: name.trim() || 'Hunter', scores, bossStat: boss, habits })}
+          disabled={(mode === 'new' || replace) && habits.length === 0}
+          onClick={() => {
+            if (mode === 'retake') {
+              retake({ scores, bossStat: boss, habits, replaceQuests: replace });
+              onDone?.();
+            } else {
+              start({ name: name.trim() || 'Hunter', scores, bossStat: boss, habits });
+            }
+          }}
         >
-          Begin the 66 days
+          {mode === 'retake' ? 'Apply changes' : 'Begin the 66 days'}
         </button>
       </div>
     </Shell>

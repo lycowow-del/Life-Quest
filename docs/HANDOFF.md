@@ -1,6 +1,18 @@
 # Life Quest handoff
 
-## Current version: 0.6.0 (S6). See docs/CHANGELOG.md for the history.
+## Current version: 0.6.5 (S6.5). See docs/CHANGELOG.md for the history.
+
+## 0.6.5 changes (routine quests, retake)
+- Core `schedule.ts`: `isDueOn`, `inGraceOn`, `visibleOn`, `missedWhenDayEnds`, `describeSchedule`, `dueNote`, `upcomingRoutine`. `Habit.schedule` is `{kind:'every', n, anchor}` or `{kind:'weekdays', days}` (0 = Sunday). `profile.startWeekday` is the weekday of game day 1 (set by the store from `startDateKey`; the dev skip-day button shifts it).
+- `activeHabits` now means "visible today" (due or on its grace day). Use `hasHabits` to ask whether any quest exists at all.
+- `completeQuest` returns reason `not_due` for a hidden quest. `endDay`: grace logic decides penalties, a rest day (quests exist, none visible) leaves streak and consecutive-miss count alone and sets `DayLog.rest`; skill-card activity counts rest days. `bossCleared` only requires boss quests that were due.
+- Routine quests are only created by the player (the quiz library is unchanged, so the 66-day pacing check still lands at Gold II for the default plan).
+- `applyRetake` (stats raise-only, boss stat re-picked, optional replace with ramp from today). UI: `Onboarding` has `mode="retake"`; Settings has a Quiz section.
+- Web: `ScheduleFields`, `lib/scheduleDraft.ts`; `QuestRow` `note` prop; `QuestList` rest card and "Coming up".
+- Tests: 121 core + 6 pixel = 127.
+
+## Limits
+- Old saves load fine. Daily quests behave exactly as before.
 
 ## 0.6.0 changes (focus, mood, journal)
 - Core: `activity.ts` (`completeFocusSession`, `logMood`, `saveJournalEntry`, `focusQuest`, `suggestedFocusMinutes`, `todayFocus`, `todayJournal`) and `reward.ts` (`grantXp` returns a `Reward` with rank and level changes). `GameState` gains optional `journal` and `focus` records (validated in `serialize.ts`). Constants: `FOCUS_XP_PER_MIN` 1.2, `FOCUS_MIN_MINUTES` 10, `FOCUS_DAILY_XP_CAP` 120, `MOOD_XP` 5, `JOURNAL_XP` 15.
@@ -38,8 +50,8 @@
 - The service worker and install flow could not be run in the build environment; verify on a device.
 - No quiz retake, no skill card collection screen, no pet yet. Dev "Skip to next day" must be removed before v1.0.
 
-## Next: S6.5 (routine quests and quiz retake)
-Quests due every N days or on set weekdays (rest days must not break streaks; settle missed-day rules first), and retaking the quiz from Settings. Then S7 Hard Mode polish, S8 heatmap and radar, S8.5 pet, S9 skill cards and achievements, S10 launch.
+## Next: S7 (Hard Mode polish)
+Clearer penalty previews, 3-day restart warning, edge-case tests with rest days. Then S8 heatmap and radar, S8.5 pet, S9 skill cards and achievements, S10 launch.
 
 ## S4.5 changes (rank ladder and promotion scenes)
 - **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.

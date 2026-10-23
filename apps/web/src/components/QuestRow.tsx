@@ -14,10 +14,12 @@ interface Props {
   habit: Habit;
   done: boolean;
   xp: number; // earned XP if done, projected XP if not
+  /** Schedule note for routine quests, e.g. "Every 3 days". */
+  note?: string;
   onComplete: (habit: Habit, origin: Origin) => void;
 }
 
-export function QuestRow({ habit, done, xp, onComplete }: Props) {
+export function QuestRow({ habit, done, xp, note, onComplete }: Props) {
   const meta = STAT_META[habit.stat];
   const click = (e: MouseEvent<HTMLButtonElement>) => {
     const box = e.currentTarget.querySelector('[data-check]') ?? e.currentTarget;
@@ -54,6 +56,7 @@ export function QuestRow({ habit, done, xp, onComplete }: Props) {
           <StatEmblem stat={habit.stat} size={18} />
           {meta.label}
         </span>
+        {note && <span className="block text-[11px] text-slate-500">{note}</span>}
         {habit.target && (
           <span className="block text-[11px] text-slate-500">
             Level {targetLevel(habit.target) + 1}

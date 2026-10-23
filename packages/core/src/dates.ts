@@ -17,6 +17,9 @@ export const daysBetween = (fromKey: string, toKey: string): number =>
 export const addDaysToKey = (key: string, n: number): string =>
   new Date(toUtc(key) + n * 86_400_000).toISOString().slice(0, 10);
 
+/** 0 = Sunday to 6 = Saturday, for a YYYY-MM-DD key. */
+export const weekdayOfKey = (key: string): number => new Date(toUtc(key)).getUTCDay();
+
 /** Day 1 is the date the game started. */
 export const dayNumberForDate = (startDateKey: string, todayKey: string): number =>
   1 + daysBetween(startDateKey, todayKey);

@@ -2,6 +2,7 @@ import localforage from 'localforage';
 import { create } from 'zustand';
 import {
   addDaysToKey,
+  applyRetake,
   addHabit as addHabitToState,
   archiveHabit as archiveHabitInState,
   completeFocusSession,
@@ -16,6 +17,7 @@ import {
   setProgressionFrozen,
   syncToDate,
   toDateKey,
+  weekdayOfKey,
   type CompleteResult,
   type Difficulty,
   type GameState,
@@ -23,7 +25,9 @@ import {
   type Mood,
   type OnboardingPlan,
   type QuestTargetInput,
+  type RetakePlan,
   type Reward,
+  type ScheduleInput,
   type StatKey,
   type TimeOfDay,
 } from '@la66/core';
@@ -33,6 +37,10 @@ import { clearPhotos } from '../lib/photos';
 const db = localforage.createInstance({ name: 'life-arc-66', storeName: 'game' });
 const KEY = 'save';
 const todayKey = (): string => toDateKey(new Date());
+
+/** Weekday schedules need to know which weekday game day 1 fell on. */
+const withWeekday = (s: GameState, startKey: string): GameState =>
+  s.profile.startWeekday === weekdayOfKey(startKey) ? s : { ...s, profile: { ...s.profile, startWeekday: weekdayOfKey(startKey) } };
 
 // Writes are queued so they always land in order.
 let writes: Promise<unknown> = Promise.resolve();
@@ -47,6 +55,7 @@ export interface NewHabit {
   difficulty: Difficulty;
   timeOfDay: TimeOfDay;
   target?: QuestTargetInput;
+  schedule?: ScheduleInput;
 }
 
 interface GameStore {
@@ -62,6 +71,7 @@ interface GameStore {
   addHabits: (inputs: readonly NewHabit[]) => void;
   archiveHabit: (id: string) => void;
   toggleGrowth: (id: string) => void;
+  retakeQuiz: (plan: RetakePlan) => void;
   completeFocus: (minutes: number) => Reward | null;
   setMood: (mood: Mood) => Reward | null;
   saveJournal: (text: string, photoIds: string[]) => Reward | null;
@@ -99,7 +109,7 @@ export const useGame = create<GameStore>()((set, get) => {
         if (raw) {
           const r = parseSave(raw);
           if (r.ok) {
-            const synced = syncToDate(r.save.state, r.save.startDateKey, todayKey());
+            const synced = syncToDate(withWeekday(r.save.state, r.save.startDateKey), r.save.startDateKey, todayKey());
             set({ state: synced, startDateKey: r.save.startDateKey, hydrated: true });
             if (synced !== r.save.state) persist(synced, r.save.startDateKey);
             return;
@@ -114,11 +124,11 @@ export const useGame = create<GameStore>()((set, get) => {
     },
 
     startNewGame(opts) {
-      commit(createInitialState(opts), todayKey());
+      commit(createInitialState({ ...opts, startWeekday: weekdayOfKey(todayKey()) }), todayKey());
     },
 
     startFromOnboarding(plan) {
-      commit(createGameFromPlan(plan), todayKey());
+      commit(createGameFromPlan({ ...plan, startWeekday: weekdayOfKey(todayKey()) }), todayKey());
     },
 
     complete(habitId) {
@@ -137,6 +147,8 @@ export const useGame = create<GameStore>()((set, get) => {
         const h = s.habits.find((x) => x.id === id);
         return h?.target ? setProgressionFrozen(s, id, !h.target.frozen) : s;
       }),
+
+    retakeQuiz: (plan) => update((s) => applyRetake(s, plan)),
 
     completeFocus(minutes) {
       const s = get().state;
@@ -175,7 +187,7 @@ export const useGame = create<GameStore>()((set, get) => {
       const { state, startDateKey } = get();
       if (!state || !startDateKey) return;
       const shifted = addDaysToKey(startDateKey, -1);
-      commit(syncToDate(state, shifted, todayKey()), shifted);
+      commit(syncToDate(withWeekday(state, shifted), shifted, todayKey()), shifted);
     },
 
     exportJson() {
@@ -186,7 +198,7 @@ export const useGame = create<GameStore>()((set, get) => {
     importJson(json) {
       const r = parseSave(json);
       if (!r.ok) return { ok: false, error: r.error };
-      const synced = syncToDate(r.save.state, r.save.startDateKey, todayKey());
+      const synced = syncToDate(withWeekday(r.save.state, r.save.startDateKey), r.save.startDateKey, todayKey());
       commit(synced, r.save.startDateKey);
       return { ok: true };
     },

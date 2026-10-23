@@ -23,6 +23,7 @@ import type {
   Mode,
   Quest,
   QuestTargetInput,
+  ScheduleInput,
   RankInfo,
   StatKey,
   StatXp,
@@ -30,6 +31,7 @@ import type {
   UserProfile,
 } from './types';
 import { formatAmount, targetAmount, targetLevel, targetScale } from './progression';
+import { missedWhenDayEnds, visibleOn } from './schedule';
 import {
   archetype,
   consistencyMultiplier,
@@ -52,20 +54,23 @@ export function bossCleared(state: GameState): boolean {
   if (!p.bossStat) return false;
   const first = p.cycleStartDay + BOSS_START_DAY - 1;
   const last = p.cycleStartDay + BOSS_END_DAY - 1;
-  const quests = state.habits.filter((h) => !h.archived && h.stat === p.bossStat && h.createdOnDay <= first);
-  if (quests.length === 0) return false;
+  let any = false;
   for (let d = first; d <= last; d++) {
     const done = new Set((state.logs[d]?.completions ?? []).map((c) => c.habitId));
-    if (!quests.every((h) => done.has(h.id))) return false;
+    for (const h of visibleOn(state, d)) {
+      if (h.stat !== p.bossStat || h.createdOnDay > first) continue;
+      if (!done.has(h.id)) return false;
+      any = true;
+    }
   }
-  return true;
+  return any;
 }
 
 export const getLog = (state: GameState, day: number): DayLog =>
   state.logs[day] ?? { day, completions: [], penalty: 0, decayed: [], closed: false };
 
 export function createInitialState(
-  opts: { name?: string; mode?: Mode; startDay?: number } = {},
+  opts: { name?: string; mode?: Mode; startDay?: number; startWeekday?: number } = {},
 ): GameState {
   const startDay = opts.startDay ?? 1;
   const zero = (): StatXp => ({ STR: 0, INT: 0, FOC: 0, DIS: 0, WIS: 0 });
@@ -87,6 +92,7 @@ export function createInitialState(
       lastStatDay,
       bossStat: null,
       bossChestClaimedCycle: 0,
+      startWeekday: opts.startWeekday ?? 0,
     },
     habits: [],
     logs: {},
@@ -96,17 +102,24 @@ export function createInitialState(
 
 export function addHabit(
   state: GameState,
-  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string; activeFromDay?: number; target?: QuestTargetInput },
+  input: { name: string; stat: StatKey; difficulty: Difficulty; timeOfDay: TimeOfDay; id?: string; activeFromDay?: number; target?: QuestTargetInput; schedule?: ScheduleInput },
 ): GameState {
+  const createdOn = input.activeFromDay ?? state.profile.dayNumber;
+  const sched = input.schedule;
   const habit: Habit = {
     id: input.id ?? `h${state.habits.length + 1}`,
     name: input.name,
     stat: input.stat,
     difficulty: input.difficulty,
     timeOfDay: input.timeOfDay,
-    createdOnDay: input.activeFromDay ?? state.profile.dayNumber,
+    createdOnDay: createdOn,
     archived: false,
     ...(input.target ? { target: { ...input.target, completions: 0 } } : {}),
+    ...(sched?.kind === 'every'
+      ? { schedule: { kind: 'every' as const, n: Math.max(2, Math.round(sched.n)), anchor: sched.anchor ?? createdOn } }
+      : sched?.kind === 'weekdays' && sched.days.length > 0
+        ? { schedule: { kind: 'weekdays' as const, days: [...new Set(sched.days)].sort((a, b) => a - b) } }
+        : {}),
   };
   return { ...state, habits: [...state.habits, habit] };
 }
@@ -124,7 +137,7 @@ export const setMode = (state: GameState, mode: Mode): GameState => ({
 export interface CompleteResult {
   state: GameState;
   ok: boolean;
-  reason?: 'unknown_habit' | 'already_completed';
+  reason?: 'unknown_habit' | 'already_completed' | 'not_due';
   xpGained: number;
   multiplier: number;
   balancedDay: boolean;
@@ -160,6 +173,7 @@ export function completeQuest(state: GameState, habitId: string): CompleteResult
 
   const habit = state.habits.find((h) => h.id === habitId && !h.archived && h.createdOnDay <= p.dayNumber);
   if (!habit) return fail('unknown_habit');
+  if (!visibleOn(state, p.dayNumber).some((h) => h.id === habitId)) return fail('not_due');
   const day = p.dayNumber;
   const log = getLog(state, day);
   if (log.completions.some((c) => c.habitId === habitId)) return fail('already_completed');
@@ -232,7 +246,7 @@ export function checkMilestones(state: GameState): { state: GameState; unlocked:
   const cd = cycleDay(p);
   let active = 0;
   for (let d = p.cycleStartDay; d <= p.dayNumber; d++) {
-    if ((state.logs[d]?.completions.length ?? 0) > 0) active++;
+    if ((state.logs[d]?.completions.length ?? 0) > 0 || state.logs[d]?.rest) active++;
   }
   const unlocked: Milestone[] = [];
   for (const day of MILESTONE_DAYS) {
@@ -287,7 +301,7 @@ export function endDay(state: GameState): GameState {
 
   if (hard) {
     for (const h of state.habits) {
-      if (h.archived || h.createdOnDay > day || doneIds.has(h.id)) continue;
+      if (!missedWhenDayEnds(state, h, day, doneIds.has(h.id))) continue;
       const pen = Math.round(XP_VALUES[h.difficulty] * HARD_MISS_PENALTY_RATIO);
       const taken = Math.min(pen, totalXp);
       totalXp -= taken;
@@ -315,19 +329,21 @@ export function endDay(state: GameState): GameState {
     statXp[p0.bossStat] += chest;
   }
 
+  // A day with quests but none due is a rest day: it never breaks the streak or counts as missed.
+  const rest = visibleOn(state, day).length === 0 && state.habits.some((h) => !h.archived && h.createdOnDay <= day);
   const active = log.completions.length > 0;
-  const missed = active ? 0 : p0.consecutiveMissedDays + 1;
+  const missed = active ? 0 : rest ? p0.consecutiveMissedDays : p0.consecutiveMissedDays + 1;
   const closed: GameState = {
     ...state,
     profile: {
       ...p0,
       totalXp,
       statXp,
-      streak: active ? p0.streak : 0,
+      streak: active || rest ? p0.streak : 0,
       consecutiveMissedDays: missed,
       bossChestClaimedCycle: chest ? p0.cycle : (p0.bossChestClaimedCycle ?? 0),
     },
-    logs: { ...state.logs, [day]: { ...log, penalty, decayed, ...(chest ? { chest } : {}), closed: true } },
+    logs: { ...state.logs, [day]: { ...log, penalty, decayed, ...(chest ? { chest } : {}), ...(rest ? { rest: true } : {}), closed: true } },
   };
   const next = checkMilestones(closed).state;
   const np = next.profile;

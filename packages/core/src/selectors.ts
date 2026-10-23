@@ -8,12 +8,15 @@ import {
   XP_VALUES,
 } from './constants';
 import { cycleDay } from './engine';
+import { missedWhenDayEnds, visibleOn } from './schedule';
 import type { GameState, Habit, StatKey, TimeOfDay } from './types';
 import { statLevel, xpForStatLevel } from './xp';
 
-/** Quests that are unlocked today (not archived, and past their unlock day). */
-export const activeHabits = (s: GameState): Habit[] =>
-  s.habits.filter((h) => !h.archived && h.createdOnDay <= s.profile.dayNumber);
+/** Quests the player can do today: unlocked, due (or on their one grace day), and not archived. */
+export const activeHabits = (s: GameState): Habit[] => visibleOn(s, s.profile.dayNumber);
+
+/** True if the player has any quests at all, even if none is due today. */
+export const hasHabits = (s: GameState): boolean => s.habits.some((h) => !h.archived);
 
 /** Quests still locked by the onboarding ramp, grouped by the day they unlock. */
 export function upcomingUnlocks(s: GameState): { day: number; count: number }[] {
@@ -91,7 +94,7 @@ export function penaltyAtRisk(s: GameState): number {
   const done = completedToday(s);
   let total = 0;
   for (const h of s.habits) {
-    if (h.archived || h.createdOnDay > s.profile.dayNumber || done.has(h.id)) continue;
+    if (!missedWhenDayEnds(s, h, s.profile.dayNumber, done.has(h.id))) continue;
     total += Math.round(XP_VALUES[h.difficulty] * HARD_MISS_PENALTY_RATIO);
   }
   return Math.min(total, s.profile.totalXp);

@@ -12,3 +12,4 @@ export * from './reminders';
 export * from './progression';
 export * from './reward';
 export * from './activity';
+export * from './schedule';

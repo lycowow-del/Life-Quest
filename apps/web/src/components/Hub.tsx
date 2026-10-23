@@ -3,7 +3,7 @@ import { Plus, Settings } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   STARTER_HABITS,
-  activeHabits,
+  hasHabits,
   rankInfo,
   reminderBanner,
   toDateKey,
@@ -23,6 +23,7 @@ import { BottomNav, type Tab } from './BottomNav';
 import { Burst } from './Burst';
 import { FocusScreen } from './FocusScreen';
 import { JournalScreen } from './JournalScreen';
+import { Onboarding } from './Onboarding';
 import { PlayerHeader } from './PlayerHeader';
 import { PromotionScene } from './PromotionScene';
 import { QuestList } from './QuestList';
@@ -46,6 +47,7 @@ export function Hub({ state }: { state: GameState }) {
   const [toast, setToast] = useState<ToastData | null>(null);
   const [promo, setPromo] = useState<{ from: RankInfo; to: RankInfo } | null>(null);
   const [sheet, setSheet] = useState<'add' | 'settings' | null>(null);
+  const [retaking, setRetaking] = useState(false);
   const seq = useRef(0);
   const pending = useRef<ToastData | null>(null);
   const reminders = useSettings((s) => s.reminders);
@@ -152,7 +154,9 @@ export function Hub({ state }: { state: GameState }) {
     return () => stopAmbient();
   }, [timerStatus, timerMode, ambientOn]);
 
-  const empty = activeHabits(state).length === 0;
+  const empty = !hasHabits(state);
+
+  if (retaking) return <Onboarding mode="retake" onBack={() => setRetaking(false)} onDone={() => setRetaking(false)} />;
 
   return (
     <div
@@ -203,7 +207,15 @@ export function Hub({ state }: { state: GameState }) {
       <Toast toast={toast} />
       <BottomNav tab={tab} onTab={setTab} />
       <AddQuestSheet open={sheet === 'add'} onClose={() => setSheet(null)} />
-      <SettingsSheet open={sheet === 'settings'} onClose={() => setSheet(null)} state={state} />
+      <SettingsSheet
+        open={sheet === 'settings'}
+        onClose={() => setSheet(null)}
+        state={state}
+        onRetake={() => {
+          setSheet(null);
+          setRetaking(true);
+        }}
+      />
     </div>
   );
 }

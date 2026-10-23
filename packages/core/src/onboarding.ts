@@ -212,14 +212,42 @@ export interface OnboardingPlan {
   bossStat: StatKey | null;
   habits: readonly PlannedHabit[];
   mode?: Mode;
+  /** Weekday (0 = Sunday) of the day the game starts. */
+  startWeekday?: number;
 }
 
 /** Creates the starting game. If the earliest quest unlocks after day 1, everything shifts to day 1. */
 export function createGameFromPlan(plan: OnboardingPlan): GameState {
-  let s = createInitialState({ name: plan.name, mode: plan.mode });
+  let s = createInitialState({ name: plan.name, mode: plan.mode, startWeekday: plan.startWeekday });
   s = { ...s, profile: { ...s.profile, statXp: startingStatXp(plan.scores), bossStat: plan.bossStat } };
   const earliest = plan.habits.reduce((m, h) => Math.min(m, h.activeFromDay), Infinity);
   const shift = Number.isFinite(earliest) ? Math.max(0, earliest - 1) : 0;
   for (const h of plan.habits) s = addHabit(s, { ...h, activeFromDay: h.activeFromDay - shift });
+  return s;
+}
+
+export interface RetakePlan {
+  scores: StatScores;
+  bossStat: StatKey;
+  habits: readonly PlannedHabit[];
+  /** True archives the current quests and adds the new plan, with the ramp starting today. */
+  replaceQuests: boolean;
+}
+
+/**
+ * Applies a retaken quiz. Stat levels only go up (earned progress is never lost), total XP and rank
+ * are untouched, and the boss stat is re-picked.
+ */
+export function applyRetake(state: GameState, plan: RetakePlan): GameState {
+  const fromQuiz = startingStatXp(plan.scores);
+  const statXp: StatXp = { ...state.profile.statXp };
+  for (const k of STAT_KEYS) statXp[k] = Math.max(statXp[k], fromQuiz[k]);
+  let s: GameState = { ...state, profile: { ...state.profile, statXp, bossStat: plan.bossStat } };
+  if (plan.replaceQuests) {
+    s = { ...s, habits: s.habits.map((h) => (h.archived ? h : { ...h, archived: true })) };
+    const today = s.profile.dayNumber;
+    const earliest = plan.habits.reduce((m, h) => Math.min(m, h.activeFromDay), Infinity);
+    for (const h of plan.habits) s = addHabit(s, { ...h, activeFromDay: today + (h.activeFromDay - earliest) });
+  }
   return s;
 }

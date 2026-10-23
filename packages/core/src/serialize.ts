@@ -44,6 +44,7 @@ function validateState(s: unknown): string | null {
   if (!statMap(p.lastStatDay)) return 'Stat history is invalid.';
   if (p.bossStat !== undefined && p.bossStat !== null && !oneOf(p.bossStat, STAT_KEYS)) return 'Boss stat is invalid.';
   if (p.bossChestClaimedCycle !== undefined && !isNum(p.bossChestClaimedCycle)) return 'Boss chest record is invalid.';
+  if (p.startWeekday !== undefined && (!isNum(p.startWeekday) || p.startWeekday < 0 || p.startWeekday > 6)) return 'Start weekday is invalid.';
 
   if (!Array.isArray(s.habits)) return 'Habits are missing.';
   for (const h of s.habits) {
@@ -51,6 +52,12 @@ function validateState(s: unknown): string | null {
       !oneOf(h.difficulty, ['easy', 'medium', 'hard']) ||
       !oneOf(h.timeOfDay, ['morning', 'afternoon', 'evening']) ||
       !isNum(h.createdOnDay) || typeof h.archived !== 'boolean') return 'A habit is invalid.';
+    if (h.schedule !== undefined) {
+      const sc = h.schedule;
+      const ok = isObj(sc) && ((sc.kind === 'every' && isNum(sc.n) && sc.n >= 2 && isNum(sc.anchor)) ||
+        (sc.kind === 'weekdays' && Array.isArray(sc.days) && sc.days.every((d) => isNum(d) && d >= 0 && d <= 6)));
+      if (!ok) return 'A quest schedule is invalid.';
+    }
     if (h.target !== undefined) {
       const t = h.target;
       if (!isObj(t) || !isNum(t.base) || t.base <= 0 || !isNum(t.round) || t.round <= 0 ||
@@ -63,7 +70,7 @@ function validateState(s: unknown): string | null {
   if (!isObj(s.logs)) return 'Logs are missing.';
   for (const log of Object.values(s.logs)) {
     if (!isObj(log) || !isNum(log.day) || !isNum(log.penalty) || typeof log.closed !== 'boolean' ||
-      !Array.isArray(log.decayed) || !log.decayed.every((k) => oneOf(k, STAT_KEYS)) ||
+      (log.rest !== undefined && typeof log.rest !== 'boolean') || !Array.isArray(log.decayed) || !log.decayed.every((k) => oneOf(k, STAT_KEYS)) ||
       !Array.isArray(log.completions)) return 'A day log is invalid.';
     for (const q of log.completions) {
       if (!isObj(q) || !isStr(q.habitId) || !isNum(q.day) || !oneOf(q.stat, STAT_KEYS) ||

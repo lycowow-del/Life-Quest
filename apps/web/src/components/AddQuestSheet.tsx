@@ -3,6 +3,8 @@ import { XP_VALUES, customTarget, type Difficulty, type StatKey, type TargetUnit
 import { useGame } from '../store/gameStore';
 import { STAT_META, TIME_LABEL } from '../lib/theme';
 import { Sheet } from './Sheet';
+import { EMPTY_DRAFT, draftToSchedule, type ScheduleDraft } from '../lib/scheduleDraft';
+import { ScheduleFields } from './ScheduleFields';
 import { TargetFields } from './TargetFields';
 
 export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string; color?: string }[]; onChange: (v: T) => void }) {
@@ -42,13 +44,16 @@ export function AddQuestSheet({ open, onClose }: { open: boolean; onClose: () =>
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('morning');
   const [amount, setAmount] = useState('');
+  const [draft, setDraft] = useState<ScheduleDraft>(EMPTY_DRAFT);
   const [unit, setUnit] = useState<TargetUnit>('min');
 
   const submit = () => {
     const n = name.trim();
     if (!n) return;
     const target = customTarget(Number(amount), unit);
-    addHabit({ name: n, stat, difficulty, timeOfDay, ...(target ? { target } : {}) });
+    const schedule = draftToSchedule(draft);
+    addHabit({ name: n, stat, difficulty, timeOfDay, ...(target ? { target } : {}), ...(schedule ? { schedule } : {}) });
+    setDraft(EMPTY_DRAFT);
     setName('');
     setAmount('');
     onClose();
@@ -70,6 +75,7 @@ export function AddQuestSheet({ open, onClose }: { open: boolean; onClose: () =>
         <Choice label="Stat" value={stat} onChange={setStat} options={(Object.keys(STAT_META) as StatKey[]).map((k) => ({ value: k, label: STAT_META[k].label, color: STAT_META[k].color }))} />
         <Choice label="Difficulty" value={difficulty} onChange={setDifficulty} options={(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => ({ value: d, label: `${d[0]!.toUpperCase()}${d.slice(1)} +${XP_VALUES[d]}` }))} />
         <Choice label="When" value={timeOfDay} onChange={setTimeOfDay} options={(Object.keys(TIME_LABEL) as TimeOfDay[]).map((t) => ({ value: t, label: TIME_LABEL[t] }))} />
+        <ScheduleFields draft={draft} onChange={setDraft} />
         <TargetFields amount={amount} unit={unit} onAmount={setAmount} onUnit={setUnit} />
         <button type="button" disabled={!name.trim()} onClick={submit} className="w-full rounded-xl bg-arc-violet py-3 font-bold text-obsidian shadow-glow-violet disabled:opacity-40">
           Add quest

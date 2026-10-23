@@ -1,12 +1,14 @@
 import { Moon, Sun, Sunrise, Trophy } from 'lucide-react';
 import {
   activeHabits,
+  dueNote,
   bossWeekStatus,
   groupByTimeOfDay,
   penaltyAtRisk,
   questXp,
   targetScale,
   todayProgress,
+  upcomingRoutine,
   upcomingUnlocks,
   type GameState,
   type Habit,
@@ -31,6 +33,7 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
   const boss = bossWeekStatus(state);
   const bossName = boss.stat ? STAT_META[boss.stat].label : '';
   const upcoming = upcomingUnlocks(state);
+  const routine = upcomingRoutine(state);
 
   return (
     <section className="space-y-5" aria-label="Daily quests">
@@ -70,6 +73,13 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
         <p className="px-1 text-xs text-arc-cyan">Balanced day: +15% XP on your completions</p>
       )}
 
+      {progress.total === 0 && (
+        <div className="glass p-4 text-center">
+          <p className="font-bold text-arc-cyan">Rest day</p>
+          <p className="mt-1 text-xs text-slate-400">Nothing is due today. Your streak is safe.</p>
+        </div>
+      )}
+
       {ORDER.map((t) => {
         const list = groups[t];
         if (!list.length) return null;
@@ -89,12 +99,19 @@ export function QuestList({ state, onComplete }: { state: GameState; onComplete:
                 habit={h}
                 done={earned.has(h.id)}
                 xp={earned.get(h.id) ?? questXp(h.difficulty, projectedStreak, false, boss.active && boss.stat === h.stat ? boss.multiplier : 1, h.target ? targetScale(h.target) : 1)}
+                note={dueNote(state, h) ?? undefined}
                 onComplete={onComplete}
               />
             ))}
           </div>
         );
       })}
+
+      {routine.length > 0 && (
+        <p className="px-1 text-center text-xs text-slate-400">
+          Coming up: {routine.slice(0, 3).map((r) => `${r.habit.name} in ${r.inDays} ${r.inDays === 1 ? 'day' : 'days'}`).join(', ')}.
+        </p>
+      )}
 
       {upcoming.length > 0 && (
         <p className="px-1 text-center text-xs text-slate-400">

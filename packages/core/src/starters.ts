@@ -1,4 +1,4 @@
-import type { Difficulty, QuestTargetInput, StatKey, TimeOfDay } from './types';
+import type { Difficulty, QuestTargetInput, ScheduleInput, StatKey, TimeOfDay } from './types';
 
 export interface HabitInput {
   name: string;
@@ -7,6 +7,7 @@ export interface HabitInput {
   timeOfDay: TimeOfDay;
   id?: string;
   target?: QuestTargetInput;
+  schedule?: ScheduleInput;
 }
 
 /** Placeholder starter pack until the S4 roadmap generator tailors quests to the player. */
