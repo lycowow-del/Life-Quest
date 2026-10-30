@@ -83,7 +83,8 @@ function validateState(s: unknown): string | null {
   for (const m of s.milestones) {
     if (!isObj(m) || !isStr(m.id) || !oneOf(m.day, MILESTONE_DAYS) || !isNum(m.cycle) ||
       !oneOf(m.rarity, ['common', 'rare', 'epic', 'mythic']) || !isNum(m.unlockedOnDay) ||
-      !isStr(m.archetype) || !oneOf(m.topStat, STAT_KEYS)) return 'A skill card is invalid.';
+      !isStr(m.archetype) || !oneOf(m.topStat, STAT_KEYS) ||
+      (m.rank !== undefined && (!isObj(m.rank) || !isStr(m.rank.label) || !isNum(m.rank.tierIndex) || m.rank.tierIndex < 0 || m.rank.tierIndex > 9 || !isNum(m.rank.chevrons) || m.rank.chevrons < 0 || m.rank.chevrons > 4))) return 'A skill card is invalid.';
   }
   if (s.journal !== undefined) {
     if (!isObj(s.journal)) return 'Journal is invalid.';
@@ -95,6 +96,7 @@ function validateState(s: unknown): string | null {
         (e.journalPaid !== undefined && typeof e.journalPaid !== 'boolean')) return 'A journal entry is invalid.';
     }
   }
+  if (s.achievements !== undefined && (!isObj(s.achievements) || !Object.values(s.achievements).every(isNum))) return 'Achievements are invalid.';
   if (s.focus !== undefined) {
     if (!isObj(s.focus)) return 'Focus log is invalid.';
     for (const f of Object.values(s.focus)) {

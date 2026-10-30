@@ -2,7 +2,13 @@
 
 Version numbers follow the build sessions. The version shows in the app under Settings, with the build commit and date.
 
-## 0.8.5: S8.5 companion and Library (current)
+## 0.9.0: S9 skill cards and achievements (current)
+- Stats tab now has three sections: Overview, Cards and Achievements.
+- Skill cards: a collection of the cards you have earned (day 7, 21, 30 and 66, from common to mythic), shown as full cards with your crest, rank, class title, top stat, name, cycle and date. Tap one to see it large and download it as a PNG image. Cards you have not earned yet show what is needed.
+- New cards remember the rank you had when you earned them. Cards earned before this version show your top stat emblem instead.
+- Achievements: 36 achievements across Quests, Streaks, Ranks, Growth, Focus, Journal and Collection, each with a progress bar. A banner appears when one unlocks. Once earned, an achievement is never removed. Progress you already had is credited quietly when you update.
+
+## 0.8.5: S8.5 companion and Library
 - Companion: a tortoise that carries a shield-shaped shell. It starts as an egg and hatches at Iron III. Its whole body changes shape four times (baby, young from Silver IV, adult from Platinum IV, legend from Master), and its shell takes your tier colours.
 - Every division adds a chevron to its shell. From Master up it also grows every 100 points, with sparkles.
 - It idles and blinks, hops when you finish a quest, looks happy when everything due is done, and falls asleep (with Zzz) in the evening if your streak still needs a quest. A bar shows how close it is to its next growth.

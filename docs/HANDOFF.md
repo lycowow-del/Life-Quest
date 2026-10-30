@@ -1,6 +1,12 @@
 # Life Quest handoff
 
-## Current version: 0.8.5 (S8.5). See docs/CHANGELOG.md for the history.
+## Current version: 0.9.0 (S9). See docs/CHANGELOG.md for the history.
+
+## 0.9.0 changes (skill cards, achievements)
+- Core `achievements.ts`: `ACHIEVEMENTS` (data-driven defs with a target and a value function), `syncAchievements(state)` (records new ones in `GameState.achievements` as id to game day; never removed), `achievementStatus`. `Milestone.rank` (label, tierIndex, chevrons) is recorded when a card is earned; validated in `serialize.ts` along with `achievements`.
+- Store: `commit` runs `syncAchievements` on every change and sets `recentAchievements` (silent on load and import); Hub shows a banner 1.2 s later.
+- Web: `lib/skillCard.ts` draws the card on a canvas (480x680 at 2x) with the real crest and emblem sprites, and downloads it as PNG; `CardsView`, `AchievementsView`, and a section switcher in `StatsScreen`.
+- Tests: 162 core + 11 pixel = 173.
 
 ## 0.8.5 changes (companion, Library)
 - Core `pet.ts`: `petLook(xp)` returns stage, kind (egg or pet), form 0-3 (`PET_FORM_STEPS` 1, 8, 16, 28), tier colours, chevrons (division) and apex stages; `petMood(state, hour)` (happy, sleepy from 18:00 with a streak at risk, idle); `petGrowth`. Core `library.ts`: `libraryEntries` (filter, search), `moodStrip`, `moodAverage`, `libraryCounts`.
@@ -67,8 +73,8 @@
 - The service worker and install flow could not be run in the build environment; verify on a device.
 - No quiz retake, no skill card collection screen, no pet yet. Dev "Skip to next day" must be removed before v1.0.
 
-## Next: S9 (skill cards and achievements)
-Collection screen for the day 7, 21, 30 and 66 cards with image download, plus an achievements list. Then S10 launch (accessibility, speed, remove the dev skip-day button, final release).
+## Next: S10 (launch)
+Accessibility pass, performance, remove the dev skip-day button, final checks and the 1.0.0 release.
 
 ## S4.5 changes (rank ladder and promotion scenes)
 - **Ladder is 31 steps.** Iron to Diamond have divisions IV to I (steps 0-27). **Master (28), Grandmaster (29), Challenger (30) have no divisions** and use **points**: 10 XP each, one running total from the start of Master that carries over between tiers and never resets. Grandmaster begins at 425 pts, Challenger at 855 pts (`APEX_TIER_POINTS`). No ceiling.

@@ -254,6 +254,7 @@ export function checkMilestones(state: GameState): { state: GameState; unlocked:
     if ((state.logs[d]?.completions.length ?? 0) > 0 || state.logs[d]?.rest) active++;
   }
   const unlocked: Milestone[] = [];
+  const rk = rankInfo(p.totalXp);
   for (const day of MILESTONE_DAYS) {
     const id = `c${p.cycle}-d${day}`;
     if (state.milestones.some((m) => m.id === id)) continue;
@@ -266,6 +267,7 @@ export function checkMilestones(state: GameState): { state: GameState; unlocked:
         unlockedOnDay: p.dayNumber,
         archetype: archetype(p.statXp),
         topStat: topStat(p.statXp),
+        rank: { label: rk.shortLabel, tierIndex: rk.tierIndex, chevrons: rk.division ? 5 - rk.division : 0 },
       });
     }
   }

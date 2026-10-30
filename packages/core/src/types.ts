@@ -101,6 +101,8 @@ export interface Milestone {
   unlockedOnDay: number;
   archetype: string;
   topStat: StatKey;
+  /** Rank when the card was earned, for the card art. Absent on cards earned before 0.9.0. */
+  rank?: { label: string; tierIndex: number; chevrons: number };
 }
 
 export interface UserProfile {
@@ -152,6 +154,8 @@ export interface GameState {
   milestones: Milestone[];
   journal?: Record<number, JournalEntry>;
   focus?: Record<number, FocusDay>;
+  /** Achievement id to the game day it was earned. Once earned, never removed. */
+  achievements?: Record<string, number>;
 }
 
 export interface RankInfo {

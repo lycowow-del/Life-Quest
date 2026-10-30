@@ -17,3 +17,4 @@ export * from './hardmode';
 export * from './analytics';
 export * from './pet';
 export * from './library';
+export * from './achievements';
