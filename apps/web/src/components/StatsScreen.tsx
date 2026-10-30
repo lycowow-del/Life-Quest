@@ -11,6 +11,8 @@ import {
   type HeatKind,
 } from '@la66/core';
 import { STAT_META } from '../lib/theme';
+import { AchievementsView } from './AchievementsView';
+import { CardsView } from './CardsView';
 import { StatEmblem } from './StatEmblem';
 
 const KIND_COLOR: Record<HeatKind, string> = {
@@ -96,7 +98,7 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
 }
 
 /** Stats tab: stat radar, 66-day heatmap for the current cycle, and lifetime totals. */
-export function StatsScreen({ state }: { state: GameState }) {
+function Overview({ state }: { state: GameState }) {
   const [selected, setSelected] = useState<number | null>(null);
   const p = state.profile;
   const rk = rankInfo(p.totalXp);
@@ -206,5 +208,37 @@ export function StatsScreen({ state }: { state: GameState }) {
         </div>
       </div>
     </section>
+  );
+}
+
+const VIEWS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'cards', label: 'Cards' },
+  { value: 'achievements', label: 'Achievements' },
+] as const;
+
+/** Stats tab: overview (radar, heatmap, totals), skill cards, and achievements. */
+export function StatsScreen({ state }: { state: GameState }) {
+  const [view, setView] = useState<(typeof VIEWS)[number]['value']>('overview');
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2" role="tablist" aria-label="Stats sections">
+        {VIEWS.map((v) => (
+          <button
+            key={v.value}
+            type="button"
+            role="tab"
+            aria-selected={view === v.value}
+            onClick={() => setView(v.value)}
+            className={`flex-1 rounded-full border-2 px-2 py-2 text-sm ${view === v.value ? 'border-arc-violet bg-arc-violet/20' : 'border-arc-cyan/40 text-slate-400'}`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+      {view === 'overview' && <Overview state={state} />}
+      {view === 'cards' && <CardsView state={state} />}
+      {view === 'achievements' && <AchievementsView state={state} />}
+    </div>
   );
 }

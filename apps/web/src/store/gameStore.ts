@@ -12,6 +12,7 @@ import {
   exportSave,
   logMood,
   parseSave,
+  syncAchievements,
   saveJournalEntry,
   setMode as setModeInState,
   setProgressionFrozen,
@@ -22,6 +23,7 @@ import {
   type Difficulty,
   type GameState,
   type Mode,
+  type AchievementDef,
   type Mood,
   type OnboardingPlan,
   type QuestTargetInput,
@@ -63,6 +65,9 @@ interface GameStore {
   state: GameState | null;
   startDateKey: string | null;
   loadError: string | null;
+  /** Achievements earned by the last action, shown once as a banner. */
+  recentAchievements: AchievementDef[];
+  clearRecentAchievements: () => void;
   hydrate: () => Promise<void>;
   startNewGame: (opts: { name?: string; mode?: Mode }) => void;
   startFromOnboarding: (plan: OnboardingPlan) => void;
@@ -84,9 +89,10 @@ interface GameStore {
 }
 
 export const useGame = create<GameStore>()((set, get) => {
-  const commit = (state: GameState, startDateKey = get().startDateKey): void => {
+  const commit = (next: GameState, startDateKey = get().startDateKey, silent = false): void => {
     if (!startDateKey) return;
-    set({ state, startDateKey });
+    const { state, unlocked } = syncAchievements(next);
+    set({ state, startDateKey, ...(unlocked.length > 0 && !silent ? { recentAchievements: unlocked } : {}) });
     persist(state, startDateKey);
   };
   const update = (fn: (s: GameState) => GameState): void => {
@@ -99,6 +105,8 @@ export const useGame = create<GameStore>()((set, get) => {
     state: null,
     startDateKey: null,
     loadError: null,
+    recentAchievements: [],
+    clearRecentAchievements: () => set({ recentAchievements: [] }),
 
     async hydrate() {
       if (get().hydrated) return;
@@ -109,7 +117,7 @@ export const useGame = create<GameStore>()((set, get) => {
         if (raw) {
           const r = parseSave(raw);
           if (r.ok) {
-            const synced = syncToDate(withWeekday(r.save.state, r.save.startDateKey), r.save.startDateKey, todayKey());
+            const synced = syncAchievements(syncToDate(withWeekday(r.save.state, r.save.startDateKey), r.save.startDateKey, todayKey())).state;
             set({ state: synced, startDateKey: r.save.startDateKey, hydrated: true });
             if (synced !== r.save.state) persist(synced, r.save.startDateKey);
             return;
@@ -199,7 +207,7 @@ export const useGame = create<GameStore>()((set, get) => {
       const r = parseSave(json);
       if (!r.ok) return { ok: false, error: r.error };
       const synced = syncToDate(withWeekday(r.save.state, r.save.startDateKey), r.save.startDateKey, todayKey());
-      commit(synced, r.save.startDateKey);
+      commit(synced, r.save.startDateKey, true);
       return { ok: true };
     },
 

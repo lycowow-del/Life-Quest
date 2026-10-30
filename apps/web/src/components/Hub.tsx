@@ -159,6 +159,21 @@ export function Hub({ state }: { state: GameState }) {
     return () => stopAmbient();
   }, [timerStatus, timerMode, ambientOn]);
 
+  const recent = useGame((s) => s.recentAchievements);
+  useEffect(() => {
+    if (recent.length === 0) return;
+    const t = setTimeout(() => {
+      setToast({
+        id: ++seq.current,
+        title: recent.length === 1 ? 'Achievement unlocked' : `${recent.length} achievements unlocked`,
+        sub: recent.slice(0, 2).map((a) => a.name).join(', '),
+        color: '#FFE08A',
+      });
+      useGame.getState().clearRecentAchievements();
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [recent]);
+
   const empty = !hasHabits(state);
 
   if (retaking) return <Onboarding mode="retake" onBack={() => setRetaking(false)} onDone={() => setRetaking(false)} />;
